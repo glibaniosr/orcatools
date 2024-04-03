@@ -13,9 +13,10 @@ The following text was taken from ORCA official website above.
 More help using ORCA can be found at ORCA Input Library: https://sites.google.com/site/orcainputlibrary/
 
 ## inp
-The input module, which can create ORCA inputs and control their properties.
+The input submodule, which can create ORCA inputs and control their properties.
 
 ## out
-The output module, which can read ORCA output and some of their different properties.
+The output submodule, which can read ORCA output and some of their different properties.
 
 ## tools
+A submodule with a series of functions and tools to help with ORCA or molecular modeling in general.
