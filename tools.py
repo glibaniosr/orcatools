@@ -101,7 +101,6 @@ def cd(newdir):
 
 
 def interpolate(file_a, file_b, n_points):
-    # ### External input, get parameters ###
 
     ### Internal variables ###
     coord_a = []
