@@ -1,5 +1,5 @@
 # ORCA tools
-### --- by Gabriel Libânio Silva Rodrigues
+##### --- by Gabriel Libânio Silva Rodrigues
 
 ORCA tools is a Python module developed to to help users run electronic structure calculations with ORCA software developed and maintained by prof. Frank Neese and coworkers at Max Planck Institute for Chemical Energy Conversion.
 
