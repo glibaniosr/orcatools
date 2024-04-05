@@ -19,7 +19,7 @@ class ORCAINP:
     Class which holds information for a ORCA input object.
 
     :param xyz_block:
-        A string block or a .xyz formatted file with xyz coordinates.
+        A string block, a .xyz formatted file with xyz coordinates, or a ORCAOUT xyz_coords list.
     :param osi_block:
         A string block or file with ORCA simple input keywords. i.e. ! B3LYP def2-TZVP.
     :param obl_block:
@@ -49,7 +49,10 @@ class ORCAINP:
         # Get input file name
         self.orcainp_name = orcainp_name
         # Get coordinates from .xyz file
-        self.coordinates = get_coordinates_from_xyz(xyz_block)
+        if isinstance(xyz_block, list):
+            self.coordinates = xyz_block
+        else:
+            self.coordinates = get_coordinates_from_xyz(xyz_block)
         # Get OSI and OBL input-blocks
         self.osi_block = __get_input_block(osi_block)
         self.obl_block = __get_input_block(obl_block)
