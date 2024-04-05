@@ -3,84 +3,6 @@ import os
 from contextlib import contextmanager
 
 
-# ----- Functions
-def get_coordinates_from_xyz(xyz):
-    """
-    Reads molecule from file in XYZ format if file exists, or read from xyz string otherwise, and return the coordinates in a list of lists.
-
-    :param xyz:
-        File with molecular structure in XYZ format or XYZ string.
-    :return:
-        The coordinates in a list of elements lists.
-    """
-    if xyz and os.path.exists(xyz):
-        with open(xyz, "r") as fh:
-            xyzstr = "\n".join(fh.readlines()[2:])
-    else:
-        xyzstr = xyz
-    # Place xyz str in array
-    coords = []
-    for line in xyzstr.strip().splitlines():
-        if line:
-            content = line.split()
-            coords.append(
-                [content[0], float(content[1]), float(content[2]), float(content[3])]
-            )
-    return coords
-
-
-def write_xyzfile_from_xyz(xyzstr, xyz_file, title=None):
-    """
-    Write a .xyz formatted file from a string block of XYZ coordinates.
-
-    :param coords:
-        A string block of XYZ coordinates.
-    :param xyz_file:
-        A string with the .xyz file name.
-    :param title=None:
-        A title for the .xyz file where default is file basename.
-    """
-    natoms = xyzstr.count("\n")
-    if not ".xyz" in xyz_file:
-        xyz_file = xyz_file + ".xyz"
-    if not title:
-        title = xyz_file.replace(".xyz", "")
-    with open(xyz_file, "w") as out:
-        out.write(natoms)
-        out.write(title)
-        out.writelines(xyzstr)
-
-    return
-
-
-def write_xyzfile_from_coordinates(coords, xyz_file, title=None):
-    """
-    Write a .xyz formatted file from a list of lists containing XYZ coordinates.
-
-    :param coords:
-        A string block of XYZ coordinates.
-    :param xyz_file:
-        A string with the .xyz file name.
-    :param title=None:
-        A title for the .xyz file where default is file basename.
-    """
-    natoms = len(coords.count)
-    if not ".xyz" in xyz_file:
-        xyz_file = xyz_file + ".xyz"
-    if not title:
-        title = xyz_file.replace(".xyz", "")
-    xyzstr = [
-        f"{line[0]:<6s} {line[1]:10.5f} {line[2]:10.5f} {line[3]:10.5f}\n"
-        for line in coords
-    ]
-    with open(xyz_file, "w") as out:
-        out.write(natoms)
-        out.write(title)
-        out.writelines(xyzstr)
-
-    return
-
-
 ### Context manager for changing the current working directory ###
 @contextmanager
 def cd(newdir):
@@ -100,17 +22,101 @@ def cd(newdir):
         os.chdir(prevdir)
 
 
-def interpolate(file_a, file_b, n_points):
+def get_coordinates_from_xyz(xyz):
+    """
+    Reads molecule from file in XYZ format if file exists, or read from xyz string otherwise, and return the coordinates in a list of lists.
 
-    ### Internal variables ###
-    coord_a = []
-    coord_b = []
-    all_inp_a = []
-    all_inp_b = []
+    :param xyz:
+        File with molecular structure in XYZ format or XYZ string.
+    :return:
+        The coordinates in a list of elements lists.
+    """
+    if xyz and os.path.isfile(xyz):
+        with open(xyz, "r") as fh:
+            xyzstr = "\n".join(fh.readlines()[2:])
+    elif isinstance(xyz, str):
+        xyzstr = xyz
+    else:
+        raise BaseException(
+            "Your XYZ coordinates must be a .xyz formatted file or string!"
+        )
+    # Place xyz str in array
+    coords = []
+    for line in xyzstr.strip().splitlines():
+        if line:
+            content = line.split()
+            coords.append(
+                [content[0], float(content[1]), float(content[2]), float(content[3])]
+            )
+
+    return coords
+
+
+def write_xyzfile_from_xyzstr(xyzstr, xyz_file, title=None):
+    """
+    Write a .xyz formatted file from a string block of XYZ coordinates.
+
+    :param coords:
+        A string block of XYZ coordinates.
+    :param xyz_file:
+        A string with the .xyz file name.
+    :param title=None:
+        A title for the .xyz file where default is file basename.
+    """
+    natoms = xyzstr.count("\n")
+    if not ".xyz" in xyz_file:
+        xyz_file = xyz_file + ".xyz"
+    if not title:
+        title = xyz_file.replace(".xyz", "")
+    with open(xyz_file, "w") as out:
+        out.write(str(natoms) + "\n")
+        out.write(title + "\n")
+        out.writelines(xyzstr)
+
+    return
+
+
+def write_xyzfile_from_coordinates(coords, xyz_file, title=None):
+    """
+    Write a .xyz formatted file from a list of lists containing XYZ coordinates.
+
+    :param coords:
+        A string block of XYZ coordinates.
+    :param xyz_file:
+        A string with the .xyz file name.
+    :param title=None:
+        A title for the .xyz file where default is file basename.
+    """
+    natoms = len(coords)
+    if not ".xyz" in xyz_file:
+        xyz_file = xyz_file + ".xyz"
+    if not title:
+        title = xyz_file.replace(".xyz", "")
+    xyzstr = [
+        f"{line[0]:<4s} {line[1]:10.6f} {line[2]:11.6f} {line[3]:11.6f}\n"
+        for line in coords
+    ]
+    with open(xyz_file, "w") as out:
+        out.write(str(natoms) + "\n")
+        out.write(title + "\n")
+        out.writelines(xyzstr)
+
+    return
+
+
+def interpolate(xyz_a, xyz_b, n_points):
 
     # Get all the coordinates
-    coord_a = get_coordinates_from_xyz(file_a)
-    coord_b = get_coordinates_from_xyz(file_b)
+    if isinstance(xyz_a, list):
+        coord_a = xyz_a
+    else:
+        coord_a = get_coordinates_from_xyz(xyz_a)
+
+    if isinstance(xyz_b, list):
+        coord_b = xyz_b
+    else:
+        coord_b = get_coordinates_from_xyz(xyz_b)
+
     n_atoms = len(coord_a)
     if len(coord_b) != n_atoms:
         print("Your .xyz files should have the same number of atoms.")
@@ -149,3 +155,5 @@ def interpolate(file_a, file_b, n_points):
 
         all_coords.append(current_coords)
         np += 1
+
+    return all_coords

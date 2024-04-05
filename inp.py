@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os
-from tools import get_coordinates_from_xyz
+from orcatools.tools import get_coordinates_from_xyz
 
 
 # ----- General Functions

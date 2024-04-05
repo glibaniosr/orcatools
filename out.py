@@ -1,98 +1,89 @@
 #!/usr/bin/env python3
-
-# Conversion factors
-# hartree to kcal/mol
-harkcal = 627.50946900
+import os
 
 
-# To easily do from here --> get the calculation timings
-def check_normal_termination(out_file):
+def check_normal_termination(orcaout_name):
     normal_termination = False
-    with open(out_file, "r", encoding="utf8", errors="ignore") as data:
-        lines = data.readlines()
-        while not lines[-1].strip():
-            del lines[-1]
-        if "ORCA TERMINATED NORMALLY" in lines[-2]:
-            normal_termination = True
-    return normal_termination
+    runtime = 0
+    lines = os.popen(f"tail -n 2 {orcaout_name}").read().split("\n")
+    if "ORCA TERMINATED NORMALLY" in lines[0]:
+        normal_termination = True
+        clock = lines[1].split()[3:]
+        runtime = (
+            float(clock[0]) * 86400
+            + float(clock[2]) * 3600
+            + float(clock[4]) * 60
+            + float(clock[6])
+            + float(clock[8]) / 1000
+        )
+
+    return normal_termination, runtime
 
 
-def check_opt(out_file):
+def get_basic_properties(orcaout_name):
     optimization = False
-    with open(out_file, "r", encoding="utf8", errors="ignore") as data:
-        for line in data:
+    scf_energy = 0
+    coords = []
+    xyzstr = ""
+    with open(orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
+        # Check opt
+        for line in out_file:
             if "END OF INPUT" in line:
-                for idx, line in enumerate(data):
+                for idx, line in enumerate(out_file):
                     if idx == 3:
                         if "Geometry Optimization Run" in line:
                             optimization = True
-                            break
-    return optimization
-
-
-def get_energy_from_out(out_file):
-    opt = check_opt(out_file)
-    scf_energy = 0
-    with open(out_file, "r", encoding="utf8", errors="ignore") as data:
-        for line in data:
-            if opt:
-                for line in data:
-                    if "HURRAY" in line:
-                        for line in data:
-                            if "FINAL SINGLE POINT ENERGY" in line:
-                                scf_energy = float(line.split()[4])
-            else:
-                for line in data:
-                    if "FINAL SINGLE POINT ENERGY" in line:
-                        scf_energy = float(line.split()[4])
-    return scf_energy
-
-
-def get_xyz_from_out(out_file, opt):  # Have to include the scan option
-    opt = check_opt(out_file)
-
-    with open(out_file, "r", encoding="utf8", errors="ignore") as data:
-        coords = []
-        if opt:
-            for line in data:
-                if "HURRAY" in line:
-                    for line in data:
-                        if "CARTESIAN COORDINATES (ANGSTROEM)" in line:
-                            for line in data:
-                                if "---" in line:
-                                    continue
-                                if line and line != "\n":
-                                    content = line.split()
-                                    coords.append(
-                                        [
-                                            content[0],
-                                            float(content[1]),
-                                            float(content[2]),
-                                            float(content[3]),
-                                        ]
-                                    )
-                                else:
-                                    break
-        else:
-            for line in data:
-                if "CARTESIAN COORDINATES (ANGSTROEM)" in line:
-                    for line in data:
-                        if "---" in line:
                             continue
-                        if line and line != "\n":
-                            content = line.split()
-                            coords.append(
-                                [
-                                    content[0],
-                                    float(content[1]),
-                                    float(content[2]),
-                                    float(content[3]),
-                                ]
-                            )
-                        else:
-                            break
-                    break
-    return coords
+            # Get SCF energy and coords
+            if optimization:
+                for line in out_file:
+                    if "HURRAY" in line:
+                        for line in out_file:
+                            if "CARTESIAN COORDINATES (ANGSTROEM)" in line:
+                                for line in out_file:
+                                    if "---" in line:
+                                        continue
+                                    if line and line != "\n":
+                                        xyzstr += line.strip() + "\n"
+                                        content = line.split()
+                                        coords.append(
+                                            [
+                                                content[0],
+                                                float(content[1]),
+                                                float(content[2]),
+                                                float(content[3]),
+                                            ]
+                                        )
+                                    else:
+                                        for line in out_file:
+                                            if "FINAL SINGLE POINT ENERGY" in line:
+                                                scf_energy = float(line.split()[4])
+                                                break
+
+            else:
+                for line in out_file:
+                    if "CARTESIAN COORDINATES (ANGSTROEM)" in line:
+                        for line in out_file:
+                            if "---" in line:
+                                continue
+                            if line and line != "\n":
+                                xyzstr += line.strip() + "\n"
+                                content = line.split()
+                                coords.append(
+                                    [
+                                        content[0],
+                                        float(content[1]),
+                                        float(content[2]),
+                                        float(content[3]),
+                                    ]
+                                )
+                            else:
+                                for line in out_file:
+                                    if "FINAL SINGLE POINT ENERGY" in line:
+                                        scf_energy = float(line.split()[4])
+                                        break
+
+    return optimization, scf_energy, coords, xyzstr
 
 
 # ----- Define the OUTPUT class
@@ -108,204 +99,145 @@ class ORCAOUT:
 
     def __init__(self, orcaout_name, verbose=False):
         self.orcaout_name = orcaout_name
-        orca_normal_termination = check_normal_termination(orcaout_name)
+        orca_normal_termination, self.runtime = check_normal_termination(orcaout_name)
         if not orca_normal_termination:
             raise BaseException(
                 """You ORCA output file did not have a normal termination! Check your calculation and try again.
             """
             )
-        self.optimization = check_opt(orcaout_name)
-        self.scf_energy = get_energy_from_out(orcaout_name, self.optimization)
-        self.xyz_coords = get_xyz_from_out(orcaout_name, self.optimization)
+        self.optimization, self.scf_energy, self.xyz_coords, self.xyz_str = (
+            get_basic_properties(orcaout_name)
+        )
         if verbose:
             print(f"Orca Output -> {orcaout_name}")
             if self.optimization:
                 print("Optimization Run")
             else:
                 print("Single Point Energy Run")
+            print(f"(Final) Geometry: \n{self.xyz_str}")
             print(f"Final SCF Energy (Hartree) = {self.scf_energy:.12f}")
+            print(f"Calculation Time = {self.runtime} s")
 
     def get_thermal_corrections(self):
-        out_file = self.orcaout_name
-        with open(out_file, "r", encoding="utf8", errors="ignore") as data:
-            zpe = 0
-            u_correction = 0
-            KbT_correction = 0
-            h_correction = 0
-            s_correction = 0
-            g_correction = 0
-            for line in data:
+
+        with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
+            dic = None
+            for line in out_file:
                 if "Zero point energy" in line:
                     zpe = float(line.strip().split()[-4])
                 if "Total correction" in line:
                     u_correction = float(line.strip().split()[-4])
                 if "Thermal Enthalpy correction" in line:
-                    KbT_correction = float(line.strip().split()[-4])
-                    h_correction = u_correction + KbT_correction
+                    kbt_correction = float(line.strip().split()[-4])
+                    h_correction = u_correction + kbt_correction
                 if "Final entropy term" in line:
                     s_correction = float(line.strip().split()[-4])
                 if "G-E(el)" in line:
                     g_correction = float(line.strip().split()[-4])
-        if (
-            not zpe
-            and not u_correction
-            and not h_correction
-            and not s_correction
-            and not g_correction
-        ):
-            raise BaseException(
-                "We did not find vibrational data in your output. Check your calculation!"
-            )
+            try:
+                dic = {
+                    "ZPE": zpe,
+                    "U": u_correction,
+                    "H": h_correction,
+                    "S": s_correction,
+                    "G": g_correction,
+                }
+            except:
+                raise BaseException(
+                    "We did not find vibrational data in your output. Check your calculation!"
+                )
 
-        return {
-            "ZPE": zpe,
-            "U": u_correction,
-            "H": h_correction,
-            "S": s_correction,
-            "G": g_correction,
-        }
+        return dic
 
     def get_correlation_cbs(self):
-        out_file = self.orcaout_name
+
         correction = None
-        with open(out_file, "r", encoding="utf8", errors="ignore") as data:
-            for line in data:
+        with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
+            for line in out_file:
                 if f"Extrapolated CBS correlation energy" in line and "SCF" not in line:
                     line = line.strip().split()
                     correction = float(line[-1].replace("(", "").replace(")", ""))
+                    break
+        if not correction:
+            raise BaseException(
+                "It seems your output is not from a CBS (extrapolate) calculation. Please check it and try again!"
+            )
+
         return correction
 
     def get_nfod(self):
-        out_file = self.orcaout_name
+
         n_fod = None
-        with open(out_file, "r", encoding="utf8", errors="ignore") as data:
-            for line in data:
+        with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
+            for line in out_file:
                 if f"N_FOD" in line and "alpha" not in line and "beta" not in line:
                     line = line.strip().split()
                     n_fod = float(line[-1])
+                    break
+        if not n_fod:
+            raise BaseException(
+                "It seems your output is not from a FOD calculation. Please check it and try again!"
+            )
+
         return n_fod
 
-    def get_cc_diagnostic(self, triples=True, extrapolation=True):
-        out_file = self.orcaout_name
+    def get_cc_diagnostic(self):
+
+        dic = None
         if self.optimization:
             raise BaseException(
-                "The CC diagnostic must be used for Single Point Calculations only"
+                "The CC diagnostic must be used for Single Point Calculations only."
             )
 
-        if extrapolation:
-            with open(out_file, "r", encoding="utf8", errors="ignore") as data:
-                e_ccsd = 0
-                e_ccsdt = None
-                t1_diagnostic = 0
-                if triples:
-                    for line in data:
-                        if "Extrapolated Energy 2 Basis" in line:
-                            for line in data:
-                                if "T1 diagnostic" in line:
-                                    line = line.strip().split()
-                                    t1_diagnostic = float(line[-1])
-                                if "Final correlation energy" in line:
-                                    for line in data:
-                                        if "E(CCSD)" in line:
-                                            line = line.strip().split()
-                                            e_ccsd = float(line[-1])
-                                        if "E(CCSD(T))" in line:
-                                            line = line.strip().split()
-                                            e_ccsdt = float(line[-1])
-                else:
-                    for line in data:
-                        if "Extrapolated Energy 2 Basis" in line:
-                            for line in data:
-                                if "T1 diagnostic" in line:
-                                    line = line.strip().split()
-                                    t1_diagnostic = float(line[-1])
-                                if "Final correlation energy" in line:
-                                    for line in data:
-                                        if "E(CCSD)" in line:
-                                            line = line.strip().split()
-                                            e_ccsd = float(line[-1])
-        else:
-            with open(out_file, "r", encoding="utf8", errors="ignore") as data:
-                e_ccsd = 0
-                e_ccsdt = 0
-                t1_diagnostic = 0
-                if triples:
-                    for line in data:
-                        if "T1 diagnostic" in line:
+        with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
+            for line in out_file:
+                if "E(CORR)" in line:
+                    line = line.strip().split()
+                    e_corr = float(line[-1])
+                if "T1 diagnostic" in line:
+                    line = line.strip().split()
+                    t1_diagnostic = float(line[-1])
+                    dic = {"corr": e_corr, "t1": t1_diagnostic}
+                # Only for Triples calculation
+                if "Final correlation energy" in line:
+                    for line in out_file:
+                        if "E(CCSD)" in line:
                             line = line.strip().split()
-                            t1_diagnostic = float(line[-1])
-                        if "Final correlation energy" in line:
-                            for line in data:
-                                if "E(CCSD)" in line:
-                                    line = line.strip().split()
-                                    e_ccsd = float(line[-1])
-                                if "E(CCSD(T))" in line:
-                                    line = line.strip().split()
-                                    e_ccsdt = float(line[-1])
-                else:
-                    for line in data:
-                        if "T1 diagnostic" in line:
-                            line = line.strip().split()
-                            t1_diagnostic = float(line[-1])
-                        if "Final correlation energy" in line:
-                            for line in data:
-                                if "E(CCSD)" in line:
-                                    line = line.strip().split()
-                                    e_ccsd = float(line[-1])
+                            e_ccsd = float(line[-1])
+                    dic.update({"ccsd": e_ccsd})
+        if not dic:
+            raise BaseException(
+                "It seems your output is not from a CCSD or CCSD(T) calculation. Please check it and try again!"
+            )
+        return dic
 
-        return {"ccsd": e_ccsd, "ccsdt": e_ccsdt, "t1_diagnostic": t1_diagnostic}
+    def get_mcscf_correlation(self):
 
-    def get_mcscf_correlation(self, mrci=False):
-        out_file = self.orcaout_name
+        dic = None
         if self.optimization:
             raise BaseException(
-                "The MCSCF correlation must be used for Single Point Calculations only"
+                "The MCSCF correlation must be used for Single Point Calculations only."
             )
 
-        with open(out_file, "r", encoding="utf8", errors="ignore") as data:
+        with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
             e_casscf = 0
             e_corr = None
-            e_mrci = None
-            e_mrci_davidson = None
-            e_mrci_mp2 = None
 
-            for line in data:
+            for line in out_file:
                 # First the code always do CASSCF and print
                 if "Final CASSCF energy" not in line:
                     continue
                 else:
                     e_casscf = float(line.strip().split()[4])
                     e_corr = self.scf_energy - e_casscf
-                    # For MRCI calculations its useful to also get Davidson and MR-MP2 corrections
-                    if mrci:
-                        e_mrci = self.scf_energy
-                        e_mrci_davidson = []
-                        e_mrci_mp2 = []
-                        for line in data:
-                            getdata = None
-                            if "DAVIDSON DONE" in line:
-                                getdata = "dav"
-                                for line in data:
-                                    if getdata == "dav" and "Root" in line:
-                                        line = line.strip().split()
-                                        e_mrci_davidson.append(
-                                            float(line[-1].replace("DE=", ""))
-                                        )
-                                    elif "Full relaxed MR-MP2 calculation" in line:
-                                        getdata = "mp2"
-                                        for line in data:
-                                            if getdata == "mp2" and "Root" in line:
-                                                line = line.strip().split()
-                                                e_mrci_mp2.append(float(line[-1]))
-                                            elif getdata == "mp2" and len(
-                                                e_mrci_mp2
-                                            ) == len(e_mrci_davidson):
-                                                break
+                    dic = {
+                        "casscf": e_casscf,
+                        "corr": e_corr,
+                    }
+                    break
+        if not dic:
+            raise BaseException(
+                "It seems your output is not from a NEVPT2, CASPT2 or MRCI calculation. Please check it and try again!"
+            )
 
-        return {
-            "casscf": e_casscf,
-            "corr": e_corr,
-            "mrci": e_mrci,
-            "mrci_davidson": e_mrci_davidson,
-            "mrci_mp2": e_mrci_mp2,
-        }
+        return dic
