@@ -104,13 +104,15 @@ class ORCAINP:
             self.write_input()
 
         try:
-            command = f"{os.path.dirname(__file__)}/orca_run.sh"
+            os.environ(["ORCAPATH"])
+            os.environ(["ORCASCR"])
         except:
             print(
-                "You need to set the $ORCARUN variable in order to use the run() function."
+                'To use orca-run you need to first export ORCAPATH and ORCASCR variables in your enviroment. Example:\nexport ORCAPATH="/path/to/orca"\n export ORCASCR="/tmp/orca".'
             )
             exit()
 
+        command = f"{os.path.dirname(__file__)}/orca_run.sh"
         command += f" -i {self.orcainp_name} "
         if output:
             command += f" -o {self.basename+'.out'}"
