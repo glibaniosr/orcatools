@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import os
+import subprocess as sub
 from orcatools.tools import get_coordinates_from_xyz
 
 
 # ----- General Functions
-def __get_input_block(block):
+def get_input_block(block):
     if block and os.path.exists(block):
         with open(block, "r") as inp:
             block = inp.read()
@@ -36,16 +37,19 @@ class ORCAINP:
 
     def __init__(
         self,
+        orcainp_name,
         xyz_block,
         osi_block,
-        obl_block,
-        orcainp_name,
+        obl_block=None,
         charge=0,
         mult=1,
         guess_file=None,
+        # For the future
+        # nprocs=None,
+        # maxcore=None
     ):
         # Basename for input file
-        basename = orcainp_name.replace(".inp", "")
+        self.basename = orcainp_name.replace(".inp", "")
         # Get input file name
         self.orcainp_name = orcainp_name
         # Get coordinates from .xyz file
@@ -54,20 +58,34 @@ class ORCAINP:
         else:
             self.coordinates = get_coordinates_from_xyz(xyz_block)
         # Get OSI and OBL input-blocks
-        self.osi_block = __get_input_block(osi_block)
-        self.obl_block = __get_input_block(obl_block)
+        self.osi_block = get_input_block(osi_block)
+        self.obl_block = get_input_block(obl_block)
         # Charge and multiplicity
         self.charge = charge
         self.mult = mult
         self.guess_file = guess_file
+        # For the future
+        # self.nprocs = nprocs
+        # self.maxcore = maxcore
 
     def write_input(self):
         """
         Write a ORCA input file from ORCAINP object.
         """
-        input_blocks = f"{self.osi_block}\n{self.obl_block}\n"
+        input_blocks = ""
+
+        # For future orca_run in Python
+        # if self.nprocs:
+        #     input_blocks += f"%pal {self.nprocs}\n"
+        # if self.maxcore:
+        #     input_blocks += f"%maxcore {self.maxcore}\n"
+
+        input_blocks += f"{self.osi_block}\n"
+        if self.obl_block:
+            input_blocks += f"{self.obl_block}\n"
         if self.guess_file:
-            input_blocks = f'{input_blocks}!MORead\n%moinp "{self.guess_file}"\n\n'
+            input_blocks += f'!MORead\n%moinp "{self.guess_file}"\n'
+        input_blocks += "\n"
         header = f"{input_blocks}* xyz {self.charge} {self.mult}\n"
         xyzstr = [
             f"{line[0]:<6s} {line[1]:10.5f} {line[2]:10.5f} {line[3]:10.5f}\n"
@@ -80,3 +98,29 @@ class ORCAINP:
             for line in xyzstr:
                 out.write(line)
             out.write("*")
+
+    def run(self, output=None, nprocs=None, maxcore=None, extrafiles=[]):
+        if not os.path.exists(self.orcainp_name):
+            self.write_input()
+
+        try:
+            command = f"{os.path.dirname(__file__)}/orca_run.sh"
+        except:
+            print(
+                "You need to set the $ORCARUN variable in order to use the run() function."
+            )
+            exit()
+
+        command += f" -i {self.orcainp_name} "
+        if output:
+            command += f" -o {self.basename+'.out'}"
+        if nprocs:
+            command += f"-p {nprocs} "
+        elif maxcore:
+            command += f"-m {maxcore} "
+        elif extrafiles:
+            command += f'-a \"{''.join(extrafiles)} \"'
+
+        sub.Popen(command.split(), stdout=sub.PIPE)
+
+        return 
