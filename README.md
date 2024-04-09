@@ -20,17 +20,16 @@ Examples:
 ### Create, write an input file from string blocks, and run it.
 ```python
 from orcatools.inp import ORCAINP
-xyz = "B 0.0 0.0 0.0"
-osi = "! CCSD cc-pVDZ"
+xyz = "B 0.0 0.0 0.8"
+osi = "! CCSD(T) cc-pVDZ"
 charge = 0
 mult = 2
 
-inp = ORCAINP("example.inp", xyz_block=xyz, osi_block=osi, charge=charge, mult=mult)
+inp = ORCAINP("B.ccsd.inp", xyz_block=xyz, osi_block=osi, charge=charge, mult=mult)
 inp.run(nprocs=2)
-# or
-# inp.run(2)
-# or
-help(ORCAINP.run)
+
+#help(ORCAINP)
+#help(ORCAINP.run)
 ```
 
 ### Read input, change block and rewrite in new file
@@ -38,13 +37,25 @@ help(ORCAINP.run)
 from orcatools.inp import ORCAINP
 
 # Read input
-inp = ORCAINP("B.ccd.inp")
-# Change ORCA simple input block
-osi = "! CCSD(T) cc-pVDZ"
+inp = ORCAINP("B.ccsd.inp")
+# Change ORCA input blocks
+osi = "! CCSD(T) cc-pVTZ\n"
+obl = "%scf MaxIter 250 end"
+xyz = inp.xyzstr
+xyz += "B 0.0 0.0 -0.8"
+
+# Update input blocks
 inp.update_osi(osi)
-# Change input name and write input file
-inp.update_name("example.inp")
+inp.update_obl(obl)
+inp.update_xyz(xyz)
+inp.update_name("B2.ccsd.inp")
+inp.update_mult(3)
 inp.write_input()
+
+# help(ORCAINP.update_name)
+# help(ORCAINP.update_osi)
+# help(ORCAINP.update_obl)
+# help(ORCAINP.update_xyz)
 ```
 
 ## out
@@ -53,17 +64,20 @@ The output submodule, which can read ORCA output and some of their different pro
 Examples:
 
 ```python
-# Interpolate coordinates from two output files and write xyz files.
 import orcatools as ot
 from orcatools.out import ORCAOUT
 from orcatools.tools import interpolate
 
 xyz_a = ORCAOUT("a.out").xyz_coords
 xyz_b = ORCAOUT("b.out").xyz_str
+
 xyzs = interpolate(xyz_a, xyz_b, 5)
 
 for idx,coords in enumerate(xyzs):
-    ot.tools.write_xyzfile_from_coordinates(coords, f"xyzs/xyz_{idx:02d}.xyz")
+   ot.tools.write_xyzfile_from_coordinates(coords, f"xyzs/xyz_{idx+1:02d}.xyz")
+
+# help(ORCAOUT)
+# help(interpolate)
 ```
 
 ## tools
@@ -74,7 +88,7 @@ Examples:
 ### Use the supplied orca_run.sh script to run a calculation from a Python script and an input file.
 ```python
 from orcatools.tools import orca_run
-# Run direct from input file and not ORCAINP object.
-inp = "B.ccd.inp"
+
+inp = "B2.ccsd.inp"
 orca_run(inp, nprocs=2, output="orca_output.log")
 ```
