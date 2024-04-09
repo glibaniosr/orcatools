@@ -17,7 +17,7 @@ The input submodule, which can create ORCA inputs and control their properties.
 
 Examples:
 
-### Create and write an input file from string blocks
+### Create, write an input file from string blocks, and run it.
 ```python
 from orcatools.inp import ORCAINP
 xyz = "B 0.0 0.0 0.0"

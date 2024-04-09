@@ -42,15 +42,20 @@ def get_coordinates_from_xyz(xyz):
             "Your XYZ coordinates must be a .xyz formatted file or string!"
         )
     # Place xyz str in array
-    coords = []
+    coordinates = []
     for line in xyzstr.strip().splitlines():
         if line:
             content = line.split()
-            coords.append(
+            coordinates.append(
                 [content[0], float(content[1]), float(content[2]), float(content[3])]
             )
+    # Standardize xyz string
+    xyzstr = ""
+    for line in coordinates:
+        xyzstr += f"{line[0]:<6s} {line[1]:10.5f} {line[2]:10.5f} {line[3]:10.5f}\n"
 
-    return coords
+
+    return coordinates, xyzstr
 
 
 def write_xyzfile_from_xyzstr(xyzstr, xyz_file, title=None):
@@ -116,14 +121,16 @@ def interpolate(xyz_a, xyz_b, npoints):
     if isinstance(xyz_a, list):
         coord_a = xyz_a
     else:
-        coord_a = get_coordinates_from_xyz(xyz_a)
+        coord_a, a_str = get_coordinates_from_xyz(xyz_a)
 
     if isinstance(xyz_b, list):
         coord_b = xyz_b
     else:
-        coord_b = get_coordinates_from_xyz(xyz_b)
+        coord_b, a_str = get_coordinates_from_xyz(xyz_b)
 
     natoms = len(coord_a)
+    #print("a ",natoms)
+    #print("b ", len(coord_b))
     if len(coord_b) != natoms:
         print("Your .xyz files should have the same number of atoms.")
         sys.exit()
@@ -181,6 +188,9 @@ def orca_run(orcainp, nprocs=None, maxcore=None, output=None, extrafiles=[], orc
         :param orca_command:
             Full command in order to run ORCA, in case orca_run.sh is not to be used.
         """
+        if not os.path.isfile(orcainp):
+            raise BaseException("ORCA input file does not exists!")
+        
         if orca_command:
             command = orca_command
         else:

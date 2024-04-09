@@ -44,6 +44,7 @@ def _get_input_blocks_from_file(orcainp_name, verbose=False):
             print("obl: ",obl_block)
             print("xyz ", xyzstr)
             print(f"Charge: {charge}\nMult: {mult}")
+    
     return osi_block, obl_block, xyzstr, charge, mult
 
 
@@ -100,8 +101,12 @@ class ORCAINP:
         # Get coordinates from .xyz file
         if isinstance(xyz_block, list):
             self.coordinates = xyz_block
+            self.xyzstr = ""
+            for line in self.coordinates:
+                self.xyzstr += f"{line[0]:<6s} {line[1]:10.5f} {line[2]:10.5f} {line[3]:10.5f}\n"
+            
         else:
-            self.coordinates = get_coordinates_from_xyz(xyz_block)
+            self.coordinates, self.xyzstr = get_coordinates_from_xyz(xyz_block)
 
         # For the future
         # self.nprocs = nprocs
@@ -126,41 +131,12 @@ class ORCAINP:
             input_blocks += f'!MORead\n%moinp "{self.guess_file}"\n'
         input_blocks += "\n"
         header = f"{input_blocks}* xyz {self.charge} {self.mult}\n"
-        xyzstr = [
-            f"{line[0]:<6s} {line[1]:10.5f} {line[2]:10.5f} {line[3]:10.5f}\n"
-            for line in self.coordinates
-        ]
         filename = self.orcainp_name
 
         with open(filename, "w") as out:
             out.write(header)
-            for line in xyzstr:
-                out.write(line)
+            out.write(self.xyzstr)
             out.write("*")
-
-    def update_name(self, newname):
-        """
-        Updates input name with newname.
-        """
-        self.orcainp_name = newname
-    
-    def update_osi(self, osi_block):
-        """
-        Updates osi (ORCA simple input !) blocks.
-        """
-        self.osi_block = osi_block
-
-    def update_obl(self, obl_block):
-        """
-        Updates obl (ORCA % input) blocks.
-        """
-        self.osi_block = obl_block
-
-    def update_xyz(self, xyzstr):
-        """
-        Updates xyz coordinates.
-        """
-        self.coordinates = get_coordinates_from_xyz(xyzstr)
 
     def run(self, nprocs=None, maxcore=None, output=None, extrafiles=[], orcarun=None, orca_command=None):
         """
@@ -203,3 +179,39 @@ class ORCAINP:
         sub.Popen(command.split())
 
         return 
+    
+    def update_name(self, newname):
+        """
+        Updates input name with newname.
+        """
+        self.orcainp_name = newname
+    
+    def update_osi(self, osi_block):
+        """
+        Updates osi (ORCA simple input !) blocks.
+        """
+        self.osi_block = osi_block
+
+    def update_obl(self, obl_block):
+        """
+        Updates obl (ORCA % input) blocks.
+        """
+        self.obl_block = obl_block
+
+    def update_xyz(self, xyzstr):
+        """
+        Updates xyz coordinates.
+        """
+        self.coordinates, self.xyzstr = get_coordinates_from_xyz(xyzstr)
+
+    def update_charge(self, charge):
+        """
+        Updates carge.
+        """
+        self.charge = charge
+
+    def update_mult(self, mult):
+        """
+        Updates multiplicity.
+        """
+        self.mult = mult
