@@ -15,6 +15,21 @@ More help using ORCA can be found at ORCA Input Library: https://sites.google.co
 ## inp
 The input submodule, which can create ORCA inputs and control their properties.
 
+Examples:
+```python
+# Read input, change block and rewrite in new file
+from orcatools.inp import ORCAINP
+
+# Read input
+inp = ORCAINP("B.ccd.inp")
+# Change ORCA simple input block
+osi = "! CCSD(T) cc-pVDZ"
+inp.update_osi(osi)
+# Change input name and write input file
+inp.update_name("example.inp")
+inp.write_input()
+```
+
 ## out
 The output submodule, which can read ORCA output and some of their different properties.
 
