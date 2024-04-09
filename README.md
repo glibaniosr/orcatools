@@ -90,7 +90,10 @@ Examples:
 from orcatools.tools import orca_run
 
 inp = "B2.ccsd.inp"
-orca_run(inp, nprocs=2, output="orca_output.log")
+# If you want to use the supplied orca_run.sh script (also in my GitHub)
+orca_run(inp, nprocs=2, output="orca_output.log", orca_command=f"orca {inp} > output.out")
+# If you want to run ORCA yourself
+orca_run(inp, orca_command=f"orca {inp} > output.out")
 
 # help(orca_run)
 ```
