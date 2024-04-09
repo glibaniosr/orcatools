@@ -64,10 +64,12 @@ xyzs = interpolate(xyz_a, xyz_b, 5)
 
 for idx,coords in enumerate(xyzs):
     ot.tools.write_xyzfile_from_coordinates(coords, f"xyzs/xyz_{idx:02d}.xyz")
+```
 
 ## tools
 A submodule with a series of functions and tools to help with ORCA or molecular modeling in general.
-```
+
+Examples:
 
 ### Use the supplied orca_run.sh script to run a calculation from a Python script and an input file.
 ```python
