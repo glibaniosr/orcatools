@@ -5,11 +5,46 @@ from orcatools.tools import get_coordinates_from_xyz
 
 
 # ----- General Functions
-def get_input_block(block):
+def _get_input_block(block):
     if block and os.path.exists(block):
         with open(block, "r") as inp:
             block = inp.read()
     return block
+
+def _get_input_blocks_from_file(orcainp_name, verbose=False):
+    obl_block = ""
+    osi_block = ""
+    xyzstr = ""
+    charge = 0
+    mult = 1
+    with open(orcainp_name, 'r') as data:
+        for line in data:
+            if "!" in line:
+                osi_block += line
+            elif "%" in line:
+                obl_block += line
+                for line in data:
+                    # Here we have a problem with keywords that also have and additional "end" inside a % block.
+                    if "end" not in line:
+                        obl_block += line
+                        continue
+                    else:
+                        break
+            if "*" in line:
+                charge = line.split()[2]
+                mult = line.split()[3]
+                for line in data:
+                    if "*" not in line:
+                        xyzstr += line
+                        continue
+                    else:
+                        break
+        if verbose:
+            print("osi: ",osi_block)
+            print("obl: ",obl_block)
+            print("xyz ", xyzstr)
+            print(f"Charge: {charge}\nMult: {mult}")
+    return osi_block, obl_block, xyzstr, charge, mult
 
 
 # ----- Define the INPUT class
@@ -38,32 +73,36 @@ class ORCAINP:
     def __init__(
         self,
         orcainp_name,
-        xyz_block,
-        osi_block,
+        xyz_block=None,
+        osi_block=None,
         obl_block=None,
         charge=0,
         mult=1,
         guess_file=None,
+        verbose=False
         # For the future
         # nprocs=None,
         # maxcore=None
     ):
         # Basename for input file
         self.basename = orcainp_name.replace(".inp", "")
-        # Get input file name
+        # Get input file name and parameters if is a file with ORCA input
         self.orcainp_name = orcainp_name
+        if os.path.isfile(orcainp_name):
+            osi_block, obl_block, xyz_block, charge, mult = _get_input_blocks_from_file(orcainp_name, verbose)
+        # Get OSI and OBL input-blocks
+        self.osi_block = _get_input_block(osi_block)
+        self.obl_block = _get_input_block(obl_block)
+        # Charge and multiplicity
+        self.charge = charge
+        self.mult = mult
+        self.guess_file = guess_file
         # Get coordinates from .xyz file
         if isinstance(xyz_block, list):
             self.coordinates = xyz_block
         else:
             self.coordinates = get_coordinates_from_xyz(xyz_block)
-        # Get OSI and OBL input-blocks
-        self.osi_block = get_input_block(osi_block)
-        self.obl_block = get_input_block(obl_block)
-        # Charge and multiplicity
-        self.charge = charge
-        self.mult = mult
-        self.guess_file = guess_file
+
         # For the future
         # self.nprocs = nprocs
         # self.maxcore = maxcore
@@ -99,30 +138,68 @@ class ORCAINP:
                 out.write(line)
             out.write("*")
 
-    def run(self, output=None, nprocs=None, maxcore=None, extrafiles=[]):
-        if not os.path.exists(self.orcainp_name):
-            self.write_input()
+    def update_name(self, newname):
+        """
+        Updates input name with newname.
+        """
+        self.orcainp_name = newname
+    
+    def update_osi(self, osi_block):
+        """
+        Updates osi (ORCA simple input !) blocks.
+        """
+        self.osi_block = osi_block
 
-        try:
-            os.environ(["ORCAPATH"])
-            os.environ(["ORCASCR"])
-        except:
-            print(
-                'To use orca-run you need to first export ORCAPATH and ORCASCR variables in your enviroment. Example:\nexport ORCAPATH="/path/to/orca"\n export ORCASCR="/tmp/orca".'
-            )
-            exit()
+    def update_obl(self, obl_block):
+        """
+        Updates obl (ORCA % input) blocks.
+        """
+        self.osi_block = obl_block
 
-        command = f"{os.path.dirname(__file__)}/orca_run.sh"
-        command += f" -i {self.orcainp_name} "
-        if output:
-            command += f" -o {self.basename+'.out'}"
-        if nprocs:
-            command += f"-p {nprocs} "
-        elif maxcore:
-            command += f"-m {maxcore} "
-        elif extrafiles:
-            command += f'-a \"{''.join(extrafiles)} \"'
+    def update_xyz(self, xyzstr):
+        """
+        Updates xyz coordinates.
+        """
+        self.coordinates = get_coordinates_from_xyz(xyzstr)
 
-        sub.Popen(command.split(), stdout=sub.PIPE)
+    def run(self, nprocs=None, maxcore=None, output=None, extrafiles=[], orcarun=None, orca_command=None):
+        """
+        Run ORCA calculation from an ORCAINP object, writing the input, either by the orca_run.sh script or by supplying a command to run ORCA directly.
+
+        :param nprocs:
+            Number of cores to run.
+        :param maxcore:
+            Memory per core in MB.
+        :param output:
+           Output file name.
+        :param [extrafile]:
+            A list containing extra files to run ORCA, such as .gbw and .xyz.
+        :param orcarun:
+            Full path to orca_run.sh script. Default: orcatools orca_run.sh script.
+        :param orca_command:
+            Full command in order to run ORCA, in case orca_run.sh is not to be used.
+        """
+        self.write_input()
+        if orca_command:
+            command = orca_command
+        else:
+            if orcarun:
+                command = orcarun
+            else:
+                if orcarun:
+                    command = orcarun
+                else:
+                    command = f"{os.path.dirname(__file__)}/orca_run.sh"
+                command += f" -i {self.orcainp_name}"
+                if output:
+                    command += f" -o {output}"
+                if nprocs:
+                    command += f" -p {nprocs}"
+                elif maxcore:
+                    command += f" -m {maxcore}"
+                elif extrafiles:
+                    command += f' -a \"{''.join(extrafiles)} \"'
+
+        sub.Popen(command.split())
 
         return 

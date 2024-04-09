@@ -2,7 +2,7 @@
 import os
 
 
-def check_normal_termination(orcaout_name):
+def _check_normal_termination(orcaout_name):
     normal_termination = False
     runtime = 0
     lines = os.popen(f"tail -n 2 {orcaout_name}").read().split("\n")
@@ -20,7 +20,7 @@ def check_normal_termination(orcaout_name):
     return normal_termination, runtime
 
 
-def get_basic_properties(orcaout_name):
+def _get_basic_properties(orcaout_name):
     optimization = False
     scf_energy = 0
     coords = []
@@ -99,14 +99,14 @@ class ORCAOUT:
 
     def __init__(self, orcaout_name, verbose=False):
         self.orcaout_name = orcaout_name
-        orca_normal_termination, self.runtime = check_normal_termination(orcaout_name)
+        orca_normal_termination, self.runtime = _check_normal_termination(orcaout_name)
         if not orca_normal_termination:
             raise BaseException(
                 """You ORCA output file did not have a normal termination! Check your calculation and try again.
             """
             )
         self.optimization, self.scf_energy, self.xyz_coords, self.xyz_str = (
-            get_basic_properties(orcaout_name)
+            _get_basic_properties(orcaout_name)
         )
         if verbose:
             print(f"Orca Output -> {orcaout_name}")

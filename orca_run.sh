@@ -3,14 +3,6 @@
 
 # Script to run Orca quantum chemistry program, moving the temporary files to a scratch directory
 
-# Nprocs is the number of processors to be used
-# Maxcore is the ORCA maximum memory per core.
-# Use -mail to send an email to you in the end of the calculation if this option is configured in your system
-# -a is to copy any additional files to the run directory, as example, .gbw files to read molecular orbitals
-# or .xyz files for multiple structures runs. If you need more than one -a file, the multiple files must be 
-# specified between double quotes like $ orca_run -i input.inp -a "file1.gbw file2.xyz"
-# Case no output is specified, output will be same input name with .out extension
-
 # PATH to orca
 ORCAPATH=${ORCAPATH}
 ORCASCR=${ORCASCR}
@@ -46,7 +38,7 @@ do
 		i)	input=${OPTARG}
 			# New input to be placed in the runfiles folder to see modifications
 			inputNEW="${input%.*}.new.inp"
-			RUNDIR="${ORCASCR}" #/${input%.*}-$$"
+			RUNDIR="${ORCASCR}/${input%.*}-$$"
 			;;
 		o)	output=${OPTARG};;
 		p)	nprocs=${OPTARG};;

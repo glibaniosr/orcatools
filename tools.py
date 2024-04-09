@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import os
+import os, sys
+import subprocess as sub
 from contextlib import contextmanager
 
 
@@ -73,8 +74,6 @@ def write_xyzfile_from_xyzstr(xyzstr, xyz_file, title=None):
         out.write(title + "\n")
         out.writelines(xyzstr)
 
-    return
-
 
 def write_xyzfile_from_coordinates(coords, xyz_file, title=None):
     """
@@ -101,11 +100,18 @@ def write_xyzfile_from_coordinates(coords, xyz_file, title=None):
         out.write(title + "\n")
         out.writelines(xyzstr)
 
-    return
 
+def interpolate(xyz_a, xyz_b, npoints):
+    """
+    Interpolate the coordinates from two .xyz files through npoints returning a list of the interpolated coordinates.
 
-def interpolate(xyz_a, xyz_b, n_points):
-
+    :param xyz_a:
+        A string block, .xyz file, or ORCAOUT list with XYZ coordinates.
+    :param xyz_file:
+        A second string block, .xyz file, or ORCAOUT list with XYZ coordinates.
+    :param npoints:
+        Number of interpolation points
+    """
     # Get all the coordinates
     if isinstance(xyz_a, list):
         coord_a = xyz_a
@@ -117,36 +123,36 @@ def interpolate(xyz_a, xyz_b, n_points):
     else:
         coord_b = get_coordinates_from_xyz(xyz_b)
 
-    n_atoms = len(coord_a)
-    if len(coord_b) != n_atoms:
+    natoms = len(coord_a)
+    if len(coord_b) != natoms:
         print("Your .xyz files should have the same number of atoms.")
-        exit()
+        sys.exit()
 
     # Constants of the distances to interpolate the points for each atom n
     constx = []
     consty = []
     constz = []
     n = 0
-    while n < n_atoms:
-        constx.append((coord_b[n][1] - coord_a[n][1]) / (n_points - 1))
-        consty.append((coord_b[n][2] - coord_a[n][2]) / (n_points - 1))
-        constz.append((coord_b[n][3] - coord_a[n][3]) / (n_points - 1))
+    while n < natoms:
+        constx.append((coord_b[n][1] - coord_a[n][1]) / (npoints - 1))
+        consty.append((coord_b[n][2] - coord_a[n][2]) / (npoints - 1))
+        constz.append((coord_b[n][3] - coord_a[n][3]) / (npoints - 1))
         n = n + 1
 
     # Get the distance differences for coordinates interpolation
     np = 0
     all_coords = []
-    while np < n_points:
+    while np < npoints:
         current_coords = []
         if np == 0:
             current_coords = coord_a
-        elif np == n_points - 1:
+        elif np == npoints - 1:
             current_coords = coord_b
         # Generate new coordinates for file n outside the two minimuns
         # New coordinates
         else:
             n = 0
-            while n < n_atoms:
+            while n < natoms:
                 coordX = np * constx[n] + coord_a[n][1]
                 coordY = np * consty[n] + coord_a[n][2]
                 coordZ = np * constz[n] + coord_a[n][3]
@@ -157,3 +163,39 @@ def interpolate(xyz_a, xyz_b, n_points):
         np += 1
 
     return all_coords
+
+def orca_run(orcainp, nprocs=None, maxcore=None, output=None, extrafiles=[], orcarun=None, orca_command=None):
+        """
+        Run ORCA calculation from an ORCA input file, either by orca_run.sh script or by supplying a command to run ORCA directly.
+
+        :param nprocs:
+            Number of cores to run.
+        :param maxcore:
+            Memory per core in MB.
+        :param output:
+           Output file name.
+        :param [extrafile]:
+            A list containing extra files to run ORCA, such as .gbw and .xyz.
+        :param orcarun:
+            Full path to orca_run.sh script. Default: orcatools orca_run.sh script.
+        :param orca_command:
+            Full command in order to run ORCA, in case orca_run.sh is not to be used.
+        """
+        if orca_command:
+            command = orca_command
+        else:
+            if orcarun:
+                command = orcarun
+            else:
+                command = f"{os.path.dirname(__file__)}/orca_run.sh"
+            command += f" -i {orcainp}"
+            if nprocs:
+                command += f" -p {nprocs}"
+            elif maxcore:
+                command += f" -m {maxcore}"
+            elif output:
+                command += f" -o {output}"
+            elif extrafiles:
+                command += f' -a \"{''.join(extrafiles)}\"'
+
+        sub.Popen(command.split())
