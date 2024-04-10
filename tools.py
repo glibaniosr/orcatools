@@ -171,6 +171,42 @@ def interpolate(xyz_a, xyz_b, npoints):
 
     return all_coords
 
+def get_input_blocks_from_file(orcainp_name, verbose=False):
+    obl_block = ""
+    osi_block = ""
+    xyzstr = ""
+    charge = 0
+    mult = 1
+    with open(orcainp_name, 'r') as data:
+        for line in data:
+            if "!" in line:
+                osi_block += line
+            elif "%" in line:
+                obl_block += line
+                for line in data:
+                    # Here we have a problem with keywords that also have and additional "end" inside a % block.
+                    if "end" not in line:
+                        obl_block += line
+                        continue
+                    else:
+                        break
+            if "*" in line:
+                charge = line.split()[2]
+                mult = line.split()[3]
+                for line in data:
+                    if "*" not in line:
+                        xyzstr += line
+                        continue
+                    else:
+                        break
+        if verbose:
+            print("osi: ",osi_block)
+            print("obl: ",obl_block)
+            print("xyz ", xyzstr)
+            print(f"Charge: {charge}\nMult: {mult}")
+    
+    return osi_block, obl_block, xyzstr, charge, mult
+
 def orca_run(orcainp, nprocs=None, maxcore=None, output=None, extrafiles=[], orcarun=None, orca_command=None):
         """
         Run ORCA calculation from an ORCA input file, either by orca_run.sh script or by supplying a command to run ORCA directly.

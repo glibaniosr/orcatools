@@ -11,43 +11,6 @@ def _get_input_block(block):
             block = inp.read()
     return block
 
-def _get_input_blocks_from_file(orcainp_name, verbose=False):
-    obl_block = ""
-    osi_block = ""
-    xyzstr = ""
-    charge = 0
-    mult = 1
-    with open(orcainp_name, 'r') as data:
-        for line in data:
-            if "!" in line:
-                osi_block += line
-            elif "%" in line:
-                obl_block += line
-                for line in data:
-                    # Here we have a problem with keywords that also have and additional "end" inside a % block.
-                    if "end" not in line:
-                        obl_block += line
-                        continue
-                    else:
-                        break
-            if "*" in line:
-                charge = line.split()[2]
-                mult = line.split()[3]
-                for line in data:
-                    if "*" not in line:
-                        xyzstr += line
-                        continue
-                    else:
-                        break
-        if verbose:
-            print("osi: ",osi_block)
-            print("obl: ",obl_block)
-            print("xyz ", xyzstr)
-            print(f"Charge: {charge}\nMult: {mult}")
-    
-    return osi_block, obl_block, xyzstr, charge, mult
-
-
 # ----- Define the INPUT class
 # OSI = Orca Simple Input
 # OBL = Orca Blocks
@@ -74,8 +37,8 @@ class ORCAINP:
     def __init__(
         self,
         orcainp_name,
-        xyz_block=None,
-        osi_block=None,
+        xyz_block,
+        osi_block,
         obl_block=None,
         charge=0,
         mult=1,
@@ -89,8 +52,6 @@ class ORCAINP:
         self.basename = orcainp_name.replace(".inp", "")
         # Get input file name and parameters if is a file with ORCA input
         self.orcainp_name = orcainp_name
-        if os.path.isfile(orcainp_name):
-            osi_block, obl_block, xyz_block, charge, mult = _get_input_blocks_from_file(orcainp_name, verbose)
         # Get OSI and OBL input-blocks
         self.osi_block = _get_input_block(osi_block)
         self.obl_block = _get_input_block(obl_block)

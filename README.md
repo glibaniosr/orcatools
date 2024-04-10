@@ -32,12 +32,13 @@ inp.run(nprocs=2)
 #help(ORCAINP.run)
 ```
 
-### Read input, change block and rewrite in new file
+### Read input blocks from input file, change block and rewrite in new file
 ```python
 from orcatools.inp import ORCAINP
+from orcatools.tools import get_input_blocks_from_file
 
 # Read input
-inp = ORCAINP("B.ccsd.inp")
+osi, obl, xyz, charge, mult = get_input_blocks_from_file("B.ccsd.inp")
 # Change ORCA input blocks
 osi = "! CCSD(T) cc-pVTZ\n"
 obl = "%scf MaxIter 250 end"
