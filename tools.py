@@ -246,11 +246,11 @@ def orca_run(
         command += f" -i {orcainp}"
         if nprocs:
             command += f" -p {nprocs}"
-        elif maxcore:
+        if maxcore:
             command += f" -m {maxcore}"
-        elif output:
+        if output:
             command += f" -o {output}"
-        elif extrafiles:
+        if extrafiles:
             files = f"{''.join(extrafiles)}"
             command += f' -a  "{files}"'
 
