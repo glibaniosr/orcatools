@@ -1,5 +1,5 @@
 # Read input blocks from input file, change block and rewrite in new file
-from orcatools.inp import ORCAINP
+from orcatools.inp import ORCAINP as inp
 from orcatools.tools import get_input_blocks_from_file
 
 # Read input
