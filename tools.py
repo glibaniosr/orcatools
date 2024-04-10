@@ -213,7 +213,7 @@ def orca_run(
     nprocs=None,
     maxcore=None,
     output=None,
-    extrafiles=[],
+    extrafiles=None,
     orcarun=None,
     orca_command=None,
 ):
@@ -251,7 +251,7 @@ def orca_run(
         if output:
             command += f" -o {output}"
         if extrafiles:
-            files = f"{''.join(extrafiles)}"
-            command += f' -a  "{files}"'
+            files = ' '.join(extrafiles)
+            command += f' -a  {files}'
 
     sub.run(command.split())

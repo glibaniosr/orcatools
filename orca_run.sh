@@ -63,15 +63,14 @@ echo "scratch directory = $RUNDIR" >> ${input%.*}.nodes
 
 #### Starting job script ####
 mkdir -p "${RUNDIR}"
-cd "${RUNDIR}"
-cp "${CALCDIR}/$input" "${RUNDIR}" # Copy input to run dir
+cp "$input" "${RUNDIR}" # Copy input to run dir
 
 ### Argument Cases ###
 
 # Case there is extra files to copy
 if [ -n "$afile" ]; then
 	for file in ${afile[@]}
-		do cp "${CALCDIR}"/${file} "${RUNDIR}"
+		do cp "${file}" "${RUNDIR}"
 	done
 fi
 # Case no output is specified, output will be same input name with .out extension
@@ -104,6 +103,7 @@ ${ORCAPATH}/orca ${input} > ${CALCDIR}/${output}
 "
 
 #### RUN ORCA ####
+cd "${RUNDIR}"
 ${ORCAPATH}/orca "${input}" > "${CALCDIR}/${output}"
 
 # Do final operation on post-calculation ORCA files
