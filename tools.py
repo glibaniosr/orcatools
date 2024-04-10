@@ -54,7 +54,6 @@ def get_coordinates_from_xyz(xyz):
     for line in coordinates:
         xyzstr += f"{line[0]:<6s} {line[1]:10.5f} {line[2]:10.5f} {line[3]:10.5f}\n"
 
-
     return coordinates, xyzstr
 
 
@@ -129,8 +128,8 @@ def interpolate(xyz_a, xyz_b, npoints):
         coord_b, a_str = get_coordinates_from_xyz(xyz_b)
 
     natoms = len(coord_a)
-    #print("a ",natoms)
-    #print("b ", len(coord_b))
+    # print("a ",natoms)
+    # print("b ", len(coord_b))
     if len(coord_b) != natoms:
         print("Your .xyz files should have the same number of atoms.")
         sys.exit()
@@ -171,13 +170,14 @@ def interpolate(xyz_a, xyz_b, npoints):
 
     return all_coords
 
+
 def get_input_blocks_from_file(orcainp_name, verbose=False):
     obl_block = ""
     osi_block = ""
     xyzstr = ""
     charge = 0
     mult = 1
-    with open(orcainp_name, 'r') as data:
+    with open(orcainp_name, "r") as data:
         for line in data:
             if "!" in line:
                 osi_block += line
@@ -200,48 +200,58 @@ def get_input_blocks_from_file(orcainp_name, verbose=False):
                     else:
                         break
         if verbose:
-            print("osi: ",osi_block)
-            print("obl: ",obl_block)
+            print("osi: ", osi_block)
+            print("obl: ", obl_block)
             print("xyz ", xyzstr)
             print(f"Charge: {charge}\nMult: {mult}")
-    
+
     return osi_block, obl_block, xyzstr, charge, mult
 
-def orca_run(orcainp, nprocs=None, maxcore=None, output=None, extrafiles=[], orcarun=None, orca_command=None):
-        """
-        Run ORCA calculation from an ORCA input file, either by orca_run.sh script or by supplying a command to run ORCA directly.
 
-        :param nprocs:
-            Number of cores to run.
-        :param maxcore:
-            Memory per core in MB.
-        :param output:
-           Output file name.
-        :param [extrafile]:
-            A list containing extra files to run ORCA, such as .gbw and .xyz.
-        :param orcarun:
-            Full path to orca_run.sh script. Default: orcatools orca_run.sh script.
-        :param orca_command:
-            Full command in order to run ORCA, in case orca_run.sh is not to be used.
-        """
-        if not os.path.isfile(orcainp):
-            raise BaseException("ORCA input file does not exists!")
-        
-        if orca_command:
-            command = orca_command
+def orca_run(
+    orcainp,
+    nprocs=None,
+    maxcore=None,
+    output=None,
+    extrafiles=[],
+    orcarun=None,
+    orca_command=None,
+):
+    """
+    Run ORCA calculation from an ORCA input file, either by orca_run.sh script or by supplying a command to run ORCA directly.
+
+    :param nprocs:
+        Number of cores to run.
+    :param maxcore:
+        Memory per core in MB.
+    :param output:
+       Output file name.
+    :param [extrafile]:
+        A list containing extra files to run ORCA, such as .gbw and .xyz.
+    :param orcarun:
+        Full path to orca_run.sh script. Default: orcatools orca_run.sh script.
+    :param orca_command:
+        Full command in order to run ORCA, in case orca_run.sh is not to be used.
+    """
+    if not os.path.isfile(orcainp):
+        raise BaseException("ORCA input file does not exists!")
+
+    if orca_command:
+        command = orca_command
+    else:
+        if orcarun:
+            command = orcarun
         else:
-            if orcarun:
-                command = orcarun
-            else:
-                command = f"{os.path.dirname(__file__)}/orca_run.sh"
-            command += f" -i {orcainp}"
-            if nprocs:
-                command += f" -p {nprocs}"
-            elif maxcore:
-                command += f" -m {maxcore}"
-            elif output:
-                command += f" -o {output}"
-            elif extrafiles:
-                command += f' -a \"{''.join(extrafiles)}\"'
+            command = f"{os.path.dirname(__file__)}/orca_run.sh"
+        command += f" -i {orcainp}"
+        if nprocs:
+            command += f" -p {nprocs}"
+        elif maxcore:
+            command += f" -m {maxcore}"
+        elif output:
+            command += f" -o {output}"
+        elif extrafiles:
+            files = f"{''.join(extrafiles)}"
+            command += f' -a  "{files}"'
 
-        sub.Popen(command.split())
+    sub.Popen(command.split())

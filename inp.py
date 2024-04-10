@@ -11,6 +11,7 @@ def _get_input_block(block):
             block = inp.read()
     return block
 
+
 # ----- Define the INPUT class
 # OSI = Orca Simple Input
 # OBL = Orca Blocks
@@ -43,7 +44,7 @@ class ORCAINP:
         charge=0,
         mult=1,
         guess_file=None,
-        verbose=False
+        verbose=False,
         # For the future
         # nprocs=None,
         # maxcore=None
@@ -64,8 +65,10 @@ class ORCAINP:
             self.coordinates = xyz_block
             self.xyzstr = ""
             for line in self.coordinates:
-                self.xyzstr += f"{line[0]:<6s} {line[1]:10.5f} {line[2]:10.5f} {line[3]:10.5f}\n"
-            
+                self.xyzstr += (
+                    f"{line[0]:<6s} {line[1]:10.5f} {line[2]:10.5f} {line[3]:10.5f}\n"
+                )
+
         else:
             self.coordinates, self.xyzstr = get_coordinates_from_xyz(xyz_block)
 
@@ -99,7 +102,15 @@ class ORCAINP:
             out.write(self.xyzstr)
             out.write("*")
 
-    def run(self, nprocs=None, maxcore=None, output=None, extrafiles=[], orcarun=None, orca_command=None):
+    def run(
+        self,
+        nprocs=None,
+        maxcore=None,
+        output=None,
+        extrafiles=[],
+        orcarun=None,
+        orca_command=None,
+    ):
         """
         Run ORCA calculation from an ORCAINP object, writing the input, either by the orca_run.sh script or by supplying a command to run ORCA directly.
 
@@ -135,18 +146,19 @@ class ORCAINP:
                 elif maxcore:
                     command += f" -m {maxcore}"
                 elif extrafiles:
-                    command += f' -a \"{''.join(extrafiles)} \"'
+                    files = f"{''.join(extrafiles)}"
+                    command += f' -a  "{files}"'
 
         sub.Popen(command.split())
 
-        return 
-    
+        return
+
     def update_name(self, newname):
         """
         Updates input name with newname.
         """
         self.orcainp_name = newname
-    
+
     def update_osi(self, osi_block):
         """
         Updates osi (ORCA simple input !) blocks.
