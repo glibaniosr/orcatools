@@ -254,4 +254,4 @@ def orca_run(
             files = f"{''.join(extrafiles)}"
             command += f' -a  "{files}"'
 
-    sub.Popen(command.split())
+    sub.run(command.split())
