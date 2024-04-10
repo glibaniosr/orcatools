@@ -179,7 +179,7 @@ class ORCAINP:
 
     def update_charge(self, charge):
         """
-        Updates carge.
+        Updates charge.
         """
         self.charge = charge
 
