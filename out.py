@@ -105,7 +105,7 @@ class ORCAOUT:
                 """You ORCA output file did not have a normal termination! Check your calculation and try again.
             """
             )
-        self.optimization, self.scf_energy, self.xyz_coords, self.xyz_str = (
+        self.optimization, self.scf_energy, self.coordinates, self.xyzstr = (
             _get_basic_properties(orcaout_name)
         )
         if verbose:
@@ -114,7 +114,7 @@ class ORCAOUT:
                 print("Optimization Run")
             else:
                 print("Single Point Energy Run")
-            print(f"(Final) Geometry: \n{self.xyz_str}")
+            print(f"(Final) Geometry: \n{self.xyzstr}")
             print(f"Final SCF Energy (Hartree) = {self.scf_energy:.12f}")
             print(f"Calculation Time = {self.runtime} s")
 
