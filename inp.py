@@ -44,8 +44,8 @@ class ORCAINP:
         charge=0,
         mult=1,
         guess_file=None,
-        verbose=False,
         # For the future
+        # verbose=False
         # nprocs=None,
         # maxcore=None
     ):
@@ -163,13 +163,13 @@ class ORCAINP:
         """
         Updates osi (ORCA simple input !) blocks.
         """
-        self.osi_block = osi_block
+        self.osi_block = _get_input_block(osi_block)
 
     def update_obl(self, obl_block):
         """
         Updates obl (ORCA % input) blocks.
         """
-        self.obl_block = obl_block
+        self.obl_block = _get_input_block(obl_block)
 
     def update_xyz(self, xyzstr):
         """
