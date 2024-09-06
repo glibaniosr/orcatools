@@ -109,7 +109,7 @@ class ORCAOUT:
             _get_basic_properties(orcaout_name)
         )
         if verbose:
-            print(f"Orca Output -> {orcaout_name}")
+            print(f"Orca Output -> {os.path.abspath(orcaout_name)}")
             if self.optimization:
                 print("Optimization Run")
             else:
