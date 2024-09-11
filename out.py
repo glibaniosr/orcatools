@@ -181,7 +181,7 @@ class ORCAOUT:
 
         return n_fod
 
-    def get_cc_diagnostic(self):
+    def get_cc_diagnostic(self, extrapolation=False):
 
         dic = None
         if self.optimization:
@@ -191,20 +191,40 @@ class ORCAOUT:
 
         with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
             for line in out_file:
-                if "E(CORR)" in line:
-                    line = line.strip().split()
-                    e_corr = float(line[-1])
-                if "T1 diagnostic" in line:
-                    line = line.strip().split()
-                    t1_diagnostic = float(line[-1])
-                    dic = {"corr": e_corr, "t1": t1_diagnostic}
-                # Only for Triples calculation
-                if "Final correlation energy" in line:
-                    for line in out_file:
-                        if "E(CCSD)" in line:
-                            line = line.strip().split()
-                            e_ccsd = float(line[-1])
-                    dic.update({"ccsd": e_ccsd})
+                if extrapolation:
+                    if "Extrapolated Energy 2" in line:
+                        for line in out_file:
+                            if "E(CORR)" in line:
+                                line = line.strip().split()
+                                e_corr = float(line[-1])
+                            if "T1 diagnostic" in line:
+                                line = line.strip().split()
+                                t1_diagnostic = float(line[-1])
+                                dic = {"corr": e_corr, "t1": t1_diagnostic}
+                            # Only for Triples calculation
+                            if "Final correlation energy" in line:
+                                for line in out_file:
+                                    if "E(CCSD)" in line:
+                                        line = line.strip().split()
+                                        e_ccsd = float(line[-1])
+                                        break
+                else:
+                    if "E(CORR)" in line:
+                        line = line.strip().split()
+                        e_corr = float(line[-1])
+                    if "T1 diagnostic" in line:
+                        line = line.strip().split()
+                        t1_diagnostic = float(line[-1])
+                        dic = {"corr": e_corr, "t1": t1_diagnostic}
+                    # Only for Triples calculation
+                    if "Final correlation energy" in line:
+                        for line in out_file:
+                            if "E(CCSD)" in line:
+                                line = line.strip().split()
+                                e_ccsd = float(line[-1])
+                                break
+
+        dic.update({"ccsd": e_ccsd})
         if not dic:
             raise BaseException(
                 "It seems your output is not from a CCSD or CCSD(T) calculation. Please check it and try again!"
