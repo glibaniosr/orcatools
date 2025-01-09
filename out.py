@@ -261,3 +261,35 @@ class ORCAOUT:
             )
 
         return dic
+
+    import re
+
+    def get_sa_energies(self, unit="eV"):
+        e_idx = {"cm": 5, "nm": 6, "eV": 5}
+        energies = []
+        fosc = []
+        with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
+            in_block = False
+            for line in out_file:
+                if (
+                    "------------------------------------------------------------------------------------------"
+                    in line
+                ):
+                    for line in out_file:
+                        if "ABSORPTION SPECTRUM" in line:
+                            in_block = True
+                        elif in_block and "CD SPECTRUM" in line:
+                            break
+                        elif in_block and "0(" in line:
+                            fo = float(line.split()[7])
+                            E = float(line.split()[e_idx[unit]])
+                            if unit == "eV":
+                                E = E * 0.000124398
+                            energies.append(E)
+                            fosc.append(fo)
+        # print(energies, fosc)
+        # energies.append((float(line.split()[5])))
+
+        if not energies:
+            raise ValueError("No eV values found in the specified block of text.")
+        return energies, fosc
