@@ -120,12 +120,12 @@ def interpolate(xyz_a, xyz_b, npoints):
     if isinstance(xyz_a, list):
         coord_a = xyz_a
     else:
-        coord_a, a_str = get_coordinates_from_xyz(xyz_a)
+        coord_a = get_coordinates_from_xyz(xyz_a)[0]
 
     if isinstance(xyz_b, list):
         coord_b = xyz_b
     else:
-        coord_b, a_str = get_coordinates_from_xyz(xyz_b)
+        coord_b = get_coordinates_from_xyz(xyz_b)[0]
 
     natoms = len(coord_a)
     # print("a ",natoms)
@@ -205,6 +205,57 @@ def get_input_blocks_from_file(orcainp_name, verbose=False):
             print(f"Charge: {charge}\nMult: {mult}")
 
     return osi_block, obl_block, xyzstr, charge, mult
+
+
+def plot_orbitals(gbw_file, orb, grid_dens=40, orca_plot_path=None):
+    """
+    Plot the molecular orbitals from a .gbw file in the range of orbitals.
+
+    :param gbw_file:
+        A string with the .gbw file name.
+    :param orb:
+        A single molecular orbital number or a tuple with the range of orbitals to plot.
+    :param grid_dens:
+        A string with the grid density to plot the orbitals.
+    :param orca_plot_path:
+        A string with the path to the orca_plot executable.
+    """
+    if not os.path.isfile(gbw_file):
+        raise BaseException("The .gbw file does not exist!")
+    if not orca_plot_path:
+        raise BaseException("The path to the orca_plot executable is not defined!")
+
+    log_file = gbw_file.replace(".gbw", f"_plot.log")
+
+    if isinstance(orb, tuple):
+        orbital_range = range(orb[0], orb[1] + 1)
+    else:
+        orbital_range = [orb]
+
+    with open(log_file, "w") as stdout:
+        for orbital in orbital_range:
+            command = f"{orca_plot_path} {gbw_file} -i"
+            input_data = f"2\n{orbital}\n4\n{grid_dens}\n5\n7\n10\n11\n"
+
+            print(
+                f"Plotting Orbital = {orbital}, Grid-Density = {grid_dens} ...",
+            )
+            stdout.write(
+                f"\n\n######################\n##### Orbital {orbital} #####\n######################\n\n"
+            )
+            stdout.flush()
+
+            result = sub.run(
+                command,
+                input=input_data,
+                text=True,
+                shell=True,
+                stdout=stdout,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"Command failed with return code {result.returncode}"
+                )
 
 
 def orca_run(

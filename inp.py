@@ -12,6 +12,13 @@ def _get_input_block(block):
     return block
 
 
+def _coordinates_to_xyzstr(coordinates):
+    xyzstr = ""
+    for line in coordinates:
+        xyzstr += f"{line[0]:<6s} {line[1]:10.5f} {line[2]:10.5f} {line[3]:10.5f}\n"
+    return xyzstr
+
+
 # ----- Define the INPUT class
 # OSI = Orca Simple Input
 # OBL = Orca Blocks
@@ -63,12 +70,7 @@ class ORCAINP:
         # Get coordinates from .xyz file
         if isinstance(xyz_block, list):
             self.coordinates = xyz_block
-            self.xyzstr = ""
-            for line in self.coordinates:
-                self.xyzstr += (
-                    f"{line[0]:<6s} {line[1]:10.5f} {line[2]:10.5f} {line[3]:10.5f}\n"
-                )
-
+            self.xyzstr = _coordinates_to_xyzstr(xyz_block)
         else:
             self.coordinates, self.xyzstr = get_coordinates_from_xyz(xyz_block)
 
@@ -101,6 +103,15 @@ class ORCAINP:
             out.write(header)
             out.write(self.xyzstr)
             out.write("*")
+
+    def add_atoms(self, atoms):
+        """
+        Add atoms to ORCAINP object.
+
+        :param atoms:
+            A list of atoms to add to ORCAINP object in the format [symbol, x, y, z].
+        """
+        self.coordinates += atoms
 
     def run(
         self,
@@ -153,6 +164,23 @@ class ORCAINP:
 
         return
 
+    def change_to_dummy_atoms(self, start_index, end_index):
+        """
+        Change regular atoms to dummy atoms in ORCAINP object.
+
+        :param start_index:
+            Index to start dummy atoms (counting start from 0).
+        :param end_index:
+            Index to end dummy atoms.
+        """
+
+        for i in range(start_index, end_index):
+            symbol = self.coordinates[i][0]
+            self.coordinates[i][0] = symbol + ":"
+
+        # Standardize xyz string
+        self.xyzstr = _coordinates_to_xyzstr(self.coordinates)
+
     def update_name(self, newname):
         """
         Updates input name with newname.
@@ -188,3 +216,9 @@ class ORCAINP:
         Updates multiplicity.
         """
         self.mult = mult
+
+    def update_guess(self, guess_file):
+        """
+        Updates guess file.
+        """
+        self.guess_file = guess_file
