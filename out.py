@@ -2,90 +2,6 @@
 import os
 
 
-def _check_normal_termination(orcaout_name):
-    normal_termination = False
-    runtime = 0
-    lines = os.popen(f"tail -n 2 {orcaout_name}").read().split("\n")
-    if "ORCA TERMINATED NORMALLY" in lines[0]:
-        normal_termination = True
-        clock = lines[1].split()[3:]
-        runtime = (
-            float(clock[0]) * 86400
-            + float(clock[2]) * 3600
-            + float(clock[4]) * 60
-            + float(clock[6])
-            + float(clock[8]) / 1000
-        )
-
-    return normal_termination, runtime
-
-
-def _get_basic_properties(orcaout_name):
-    optimization = False
-    scf_energy = 0
-    coords = []
-    xyzstr = ""
-    with open(orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
-        # Check opt
-        for line in out_file:
-            if "END OF INPUT" in line:
-                for idx, line in enumerate(out_file):
-                    if idx == 3:
-                        if "Geometry Optimization Run" in line:
-                            optimization = True
-                            continue
-            # Get SCF energy and coords
-            if optimization:
-                for line in out_file:
-                    if "HURRAY" in line:
-                        for line in out_file:
-                            if "CARTESIAN COORDINATES (ANGSTROEM)" in line:
-                                for line in out_file:
-                                    if "---" in line:
-                                        continue
-                                    if line and line != "\n":
-                                        xyzstr += line.strip() + "\n"
-                                        content = line.split()
-                                        coords.append(
-                                            [
-                                                content[0],
-                                                float(content[1]),
-                                                float(content[2]),
-                                                float(content[3]),
-                                            ]
-                                        )
-                                    else:
-                                        for line in out_file:
-                                            if "FINAL SINGLE POINT ENERGY" in line:
-                                                scf_energy = float(line.split()[4])
-                                                break
-
-            else:
-                for line in out_file:
-                    if "CARTESIAN COORDINATES (ANGSTROEM)" in line:
-                        for line in out_file:
-                            if "---" in line:
-                                continue
-                            if line and line != "\n":
-                                xyzstr += line.strip() + "\n"
-                                content = line.split()
-                                coords.append(
-                                    [
-                                        content[0],
-                                        float(content[1]),
-                                        float(content[2]),
-                                        float(content[3]),
-                                    ]
-                                )
-                            else:
-                                for line in out_file:
-                                    if "FINAL SINGLE POINT ENERGY" in line:
-                                        scf_energy = float(line.split()[4])
-                                        break
-
-    return optimization, scf_energy, coords, xyzstr
-
-
 # ----- Define the OUTPUT class
 class ORCAOUT:
     """
@@ -95,19 +11,36 @@ class ORCAOUT:
         A string with the name of the output file.
     :param verbose=False:
         Specify verbosity when starting the ORCAOUT class.
+    :param function_mode=False:
+        Activate function mode, where attributes are not gathered at __init__. Useful for saving time when specific functions are requested.
+
+    :attribute runtime:
+        The runtime of the calculation.
+    :attribute optimization:
+        Boolean that tells if the calculation is an optimization.
+    :attribute scf_energy:
+        The final SCF energy.
+    :attribute coordinates:
+        The final coordinates of the system.
+    :attribute xyzstr:
+        The final coordinates of the system in string format.
     """
 
-    def __init__(self, orcaout_name, verbose=False):
+    def __init__(self, orcaout_name, verbose=False, function_mode=False):
+
+        if not os.path.exists(orcaout_name):
+            raise FileNotFoundError(f"File {orcaout_name} not found!")
+
         self.orcaout_name = orcaout_name
-        orca_normal_termination, self.runtime = _check_normal_termination(orcaout_name)
-        if not orca_normal_termination:
-            raise BaseException(
-                """You ORCA output file did not have a normal termination! Check your calculation and try again.
-            """
-            )
-        self.optimization, self.scf_energy, self.coordinates, self.xyzstr = (
-            _get_basic_properties(orcaout_name)
-        )
+
+        if not function_mode:
+            self.optimization = False
+            self.scf_energy = 0
+            self.coordinates = []
+            self.xyzstr = ""
+            self.runtime = 0
+            self._process_output_file()
+
         if verbose:
             print(f"Orca Output -> {os.path.abspath(orcaout_name)}")
             if self.optimization:
@@ -119,7 +52,17 @@ class ORCAOUT:
             print(f"Calculation Time = {self.runtime} s")
 
     def get_thermal_corrections(self):
+        """
+        Function that returns a dictionary with the thermal correction data from the output file.
 
+        :return:
+            A dictionary with the following keys:
+            "ZPE" - Zero Point Energy
+            "U" - Internal Energy
+            "H" - Enthalpy
+            "S" - Entropy
+            "G" - Gibbs Free Energy
+        """
         with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
             dic = None
             for line in out_file:
@@ -150,7 +93,9 @@ class ORCAOUT:
         return dic
 
     def get_correlation_cbs(self):
-
+        """
+        Function that returns the CBS correlation energy from the output file.
+        """
         correction = None
         with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
             for line in out_file:
@@ -166,7 +111,9 @@ class ORCAOUT:
         return correction
 
     def get_nfod(self):
-
+        """
+        Function that returns the fraction occupation density (FOD) number from the output file.
+        """
         n_fod = None
         with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
             for line in out_file:
@@ -182,7 +129,18 @@ class ORCAOUT:
         return n_fod
 
     def get_cc_diagnostic(self, extrapolation=False):
+        """
+        Function that returns the CCSD or CCSD(T) parameters from the output file.
 
+        :param
+            extrapolation=False - Change to True if your calculation uses basis set extrapolation.
+
+        :return:
+            Dictionary with the following keys:
+            "corr" - Correlation energy
+            "t1" - T1 diagnostic
+            "ccsd" - CCSD energy
+        """
         dic = None
         if self.optimization:
             raise BaseException(
@@ -232,7 +190,13 @@ class ORCAOUT:
         return dic
 
     def get_mcscf_correlation(self):
+        """
+        Function that returns the MCSCF correlation energy from the output file.
 
+        :return: Dictionary with the following keys:
+        "casscf" - CASSCF energy
+        "corr" - Correlation energy
+        """
         dic = None
         if self.optimization:
             raise BaseException(
@@ -262,9 +226,18 @@ class ORCAOUT:
 
         return dic
 
-    import re
+    def get_absorption_data(self, unit="eV"):
+        """
+        Function that returns the absorption energies and oscillator strengths from the output file.
 
-    def get_sa_energies(self, unit="eV"):
+        :param unit="eV" - The unit of the absorption energies. Options are "cm" (cm-1), "nm" and "eV".
+
+        :return: Tuple with two lists: (energies, fosc)
+
+        1. Absorption energies
+        2. Oscillator strengths
+        """
+
         e_idx = {"cm": 5, "nm": 6, "eV": 5}
         energies = []
         fosc = []
@@ -287,9 +260,44 @@ class ORCAOUT:
                                 E = E * 0.000124398
                             energies.append(E)
                             fosc.append(fo)
-        # print(energies, fosc)
-        # energies.append((float(line.split()[5])))
-
         if not energies:
-            raise ValueError("No eV values found in the specified block of text.")
+            raise ValueError(
+                "No absorption spectrum values found in the specified block of text."
+            )
         return energies, fosc
+
+    def _process_output_file(self):
+        with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
+
+            lines = out_file.readlines()
+            for line in reversed(lines):
+                if line.strip():  # Skip blank lines
+                    if "ORCA TERMINATED NORMALLY" in line:
+                        normal_termination = True
+                        clock = lines[lines.index(line) + 1].split()[3:]
+                        self.runtime = (
+                            float(clock[0]) * 86400
+                            + float(clock[2]) * 3600
+                            + float(clock[4]) * 60
+                            + float(clock[6])
+                            + float(clock[8]) / 1000
+                        )
+                        break
+            if not normal_termination:
+                raise BaseException(
+                    """Your ORCA output file did not have a normal termination! Check your calculation and try again."""
+                )
+
+            for i, line in enumerate(lines):
+                if "Geometry Optimization Run" in line:
+                    self.optimization = True
+                if "FINAL SINGLE POINT ENERGY" in line:
+                    self.scf_energy = float(line.split()[-1])
+                if "CARTESIAN COORDINATES (ANGSTROEM)" in line:
+                    self.coordinates = []
+                    self.xyzstr = ""
+                    for j in range(i + 2, len(lines)):
+                        if lines[j].strip() == "":
+                            break
+                        self.coordinates.append(lines[j].strip())
+                        self.xyzstr += lines[j]

@@ -29,8 +29,8 @@ def get_coordinates_from_xyz(xyz):
 
     :param xyz:
         File with molecular structure in XYZ format or XYZ string.
-    :return:
-        The coordinates in a list of elements lists.
+    :return coordinates, xyzstr:
+        The coordinates in a list of elements lists and the XYZ string.
     """
     if xyz and os.path.isfile(xyz):
         with open(xyz, "r") as fh:
@@ -177,26 +177,25 @@ def get_input_blocks_from_file(orcainp_name, verbose=False):
     xyzstr = ""
     charge = 0
     mult = 1
+    inside_obl_block = False
     with open(orcainp_name, "r") as data:
         for line in data:
             if "!" in line:
                 osi_block += line
             elif "%" in line:
+                if not inside_obl_block:
+                    inside_obl_block = True
                 obl_block += line
-                for line in data:
-                    # Here we have a problem with keywords that also have and additional "end" inside a % block.
-                    if "end" not in line:
-                        obl_block += line
-                        continue
-                    else:
-                        break
+            elif inside_obl_block:
+                obl_block += line
+            elif inside_obl_block and any(char in line for char in "*%!"):
+                inside_obl_block = False
             if "*" in line:
                 charge = line.split()[2]
                 mult = line.split()[3]
                 for line in data:
                     if "*" not in line:
                         xyzstr += line
-                        continue
                     else:
                         break
         if verbose:
@@ -251,7 +250,7 @@ def orca_run(
         if output:
             command += f" -o {output}"
         if extrafiles:
-            files = ' '.join(extrafiles)
-            command += f' -a  {files}'
+            files = " ".join(extrafiles)
+            command += f" -a  {files}"
 
     sub.run(command.split())
