@@ -257,7 +257,7 @@ class ORCAOUT:
                             fo = float(line.split()[7])
                             E = float(line.split()[e_idx[unit]])
                             if unit == "eV":
-                                E = E * 0.000124398
+                                E = E * 0.000123984
                             energies.append(E)
                             fosc.append(fo)
         if not energies:
