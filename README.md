@@ -279,13 +279,6 @@ NAME
     orcatools.tools
 
 FUNCTIONS
-    cd(newdir)
-        Context manager function to enter a directory, perform tasks, and go back to previous directory.
-
-        :param newdir:
-        The directory to enter and perform tasks
-        :return:
-        Get back to previous directory
 
     get_coordinates_from_xyz(xyz)
         Reads molecule from file in XYZ format if file exists, or read from xyz string otherwise, and return the coordinates in a list of lists.
