@@ -262,9 +262,54 @@ class ORCAOUT:
                             fosc.append(fo)
         if not energies:
             raise ValueError(
-                "No absorption spectrum values found in the specified block of text."
+                "No absorption spectrum values found in the specified output file."
             )
         return energies, fosc
+    
+    def get_active_space(self):
+        """
+        Function that returns the active space (initial and final orbital numbers) from the output file of a CASSCF calculation.
+        """
+        active_space = None
+        with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
+            for line in out_file:
+                if "Determined orbital ranges" in line:
+                    for line in out_file:
+                        if "Active" in line:
+                            active_space = (int(line.strip().split()[1]), int(line.strip().split()[3]))
+                            break
+        if not active_space:
+            raise BaseException(
+                "It seems your output is not from a CASSCF calculation. Please check it and try again!"
+            )
+
+        return active_space
+    
+    def get_occupation_numbers(self):
+        """
+        Function that returns the occupation numbers from the output file of a CASSCF calculation.
+        """
+        active_MOs = self.get_active_space()
+        with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
+            for line in out_file:
+                if "CASSCF RESULTS" in line:
+                    occ_numbers = []
+                    read_active_MOs = False
+                    for line in out_file:
+                        if read_active_MOs and int(line.strip().split()[0]) > active_MOs[1]:
+                            break
+                        if not line.strip():
+                            continue
+                        if line.strip().split()[0] == str(active_MOs[0]):
+                            read_active_MOs = True
+                        if read_active_MOs:
+                            occ_numbers.append(float(line.strip().split()[1]))
+        if not occ_numbers:
+            raise BaseException(
+                "It seems your output is not from a CASSCF calculation. Please check it and try again!"
+            )
+
+        return occ_numbers
 
     def _process_output_file(self):
         with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:

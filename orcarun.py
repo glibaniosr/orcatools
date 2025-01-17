@@ -5,13 +5,14 @@ import os
 
 def run(orcainp, orcaout=None, nprocs=None, maxcore=None, extrafiles=[]):
         command = os.popen("echo $ORCARUN").read()
-        if not output:
-            output = orcainp.replace(".inp",".out")
+        command += f" -i {orcainp} "
         if nprocs:
             command += f"-n {nprocs}"
         elif maxcore:
             command += f"-m {maxcore}"
         elif extrafiles:
             command += f'-a \"{''.join(extrafiles)} \"'
+        elif orcaout:
+            command += f"-o {orcaout}"
 
         os.popen(f"{command}")
