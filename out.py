@@ -270,26 +270,32 @@ class ORCAOUT:
         """
         Function that returns the active space (initial and final orbital numbers) from the output file of a CASSCF calculation.
         """
+        n = None
+        m = None
         active_space = None
         with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
             for line in out_file:
+                if "Number of active electrons" in line:
+                    n = int(line.strip().split()[-1])
+                if "Number of active orbitals" in line:
+                    m = int(line.strip().split()[-1])
                 if "Determined orbital ranges" in line:
                     for line in out_file:
                         if "Active" in line:
                             active_space = (int(line.strip().split()[1]), int(line.strip().split()[3]))
                             break
-        if not active_space:
+        if not active_space or not n or not m:
             raise BaseException(
                 "It seems your output is not from a CASSCF calculation. Please check it and try again!"
             )
 
-        return active_space
+        return n, m, active_space
     
     def get_occupation_numbers(self):
         """
         Function that returns the occupation numbers from the output file of a CASSCF calculation.
         """
-        active_MOs = self.get_active_space()
+        n, m, active_MOs = self.get_active_space()
         with open(self.orcaout_name, "r", encoding="utf8", errors="ignore") as out_file:
             for line in out_file:
                 if "CASSCF RESULTS" in line:

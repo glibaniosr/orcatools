@@ -207,7 +207,7 @@ def get_input_blocks_from_file(orcainp_name, verbose=False):
     return osi_block, obl_block, xyzstr, charge, mult
 
 
-def plot_orbitals(gbw_file, orb, grid_dens=40, orca_plot_path=None):
+def plot_orbitals(gbw_file, orb, grid_dens=40, orca_plot_path=None, verbose=False):
     """
     Plot the molecular orbitals from a .gbw file in the range of orbitals.
 
@@ -234,12 +234,11 @@ def plot_orbitals(gbw_file, orb, grid_dens=40, orca_plot_path=None):
 
     with open(log_file, "w") as stdout:
         for orbital in orbital_range:
+            if verbose:
+                print(f"Plotting Orbital = {orbital}, Grid-Density = {grid_dens} ...")
+            
             command = f"{orca_plot_path} {gbw_file} -i"
-            input_data = f"2\n{orbital}\n4\n{grid_dens}\n5\n7\n10\n11\n"
-
-            print(
-                f"Plotting Orbital = {orbital}, Grid-Density = {grid_dens} ...",
-            )
+            input_data = f"2\n{orbital}\n4\n{grid_dens}\n5\n7\n10\n11\n"  
             stdout.write(
                 f"\n\n######################\n##### Orbital {orbital} #####\n######################\n\n"
             )
@@ -256,6 +255,32 @@ def plot_orbitals(gbw_file, orb, grid_dens=40, orca_plot_path=None):
                 raise RuntimeError(
                     f"Command failed with return code {result.returncode}"
                 )
+                
+def view_orbitals(cube, isovalue=0.03, resolution=1.00):
+    """
+    View the molecular orbitals from a specified .cube file.
+    
+    :param cube:
+        A string with the .cube file name.
+    :param isovalue=0.03:
+        A float with the isovalue to plot the orbitals.
+        
+        Requires py3Dmol package.
+    """
+    try:
+        import py3Dmol as p3d
+    except ImportError:"py3Dmol package is not installed. Please install it with 'pip install py3Dmol' or 'conda -c conda-forge install py3Dmol'."
+    
+    if not os.path.isfile(cube):
+        raise BaseException("The .cube file does not exist!")
+    
+    view = p3d.view()
+    view.addModel(open(cube).read(), "cube")
+    view.setStyle({'stick': {}})
+    view.addVolumetricData(open(cube).read(), "cube", {'isoval': isovalue, 'color': 'blue', "opacity": 0.85, "resolution": resolution })
+    view.addVolumetricData(open(cube).read(), "cube", {'isoval': -isovalue, 'color': 'red', "opacity": 0.85, "resolution": resolution })
+    view.zoomTo()
+    view.show()
 
 
 def orca_run(
