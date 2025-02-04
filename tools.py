@@ -256,7 +256,7 @@ def plot_orbitals(gbw_file, orb, grid_dens=40, orca_plot_path=None, verbose=Fals
                     f"Command failed with return code {result.returncode}"
                 )
                 
-def view_orbitals(cube, isovalue=0.03, resolution=1.00):
+def orbital_viewer(cube, isovalue=0.03, resolution=1.00):
     """
     View the molecular orbitals from a specified .cube file.
     
@@ -274,13 +274,15 @@ def view_orbitals(cube, isovalue=0.03, resolution=1.00):
     if not os.path.isfile(cube):
         raise BaseException("The .cube file does not exist!")
     
-    view = p3d.view()
-    view.addModel(open(cube).read(), "cube")
-    view.setStyle({'stick': {}})
-    view.addVolumetricData(open(cube).read(), "cube", {'isoval': isovalue, 'color': 'blue', "opacity": 0.85, "resolution": resolution })
-    view.addVolumetricData(open(cube).read(), "cube", {'isoval': -isovalue, 'color': 'red', "opacity": 0.85, "resolution": resolution })
-    view.zoomTo()
-    view.show()
+    viewer = p3d.view()
+    viewer.addModel(open(cube).read(), "cube")
+    viewer.setStyle({'stick': {}})
+    viewer.addVolumetricData(open(cube).read(), "cube", {'isoval': isovalue, 'color': 'blue', "opacity": 0.85, "resolution": resolution })
+    viewer.addVolumetricData(open(cube).read(), "cube", {'isoval': -isovalue, 'color': 'red', "opacity": 0.85, "resolution": resolution })
+    viewer.zoomTo()
+    # view.show()
+    
+    return viewer
 
 
 def orca_run(
