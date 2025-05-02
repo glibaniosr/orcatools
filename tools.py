@@ -207,7 +207,7 @@ def get_input_blocks_from_file(orcainp_name, verbose=False):
     return osi_block, obl_block, xyzstr, charge, mult
 
 
-def plot_orbitals(gbw_file, orb, grid_dens=40, orca_plot_path=None, verbose=False):
+def plot_orbitals(gbw_file, orb, grid_dens=40, orca_plot_path=None, orca6=False, verbose=False):
     """
     Plot the molecular orbitals from a .gbw file in the range of orbitals.
 
@@ -238,7 +238,10 @@ def plot_orbitals(gbw_file, orb, grid_dens=40, orca_plot_path=None, verbose=Fals
                 print(f"Plotting Orbital = {orbital}, Grid-Density = {grid_dens} ...")
             
             command = f"{orca_plot_path} {gbw_file} -i"
-            input_data = f"2\n{orbital}\n4\n{grid_dens}\n5\n7\n10\n11\n"  
+            if orca6:
+                input_data = f"2\n{orbital}\n4\n{grid_dens}\n5\n7\n11\n12\n"
+            else:
+                input_data = f"2\n{orbital}\n4\n{grid_dens}\n5\n7\n10\n11\n"
             stdout.write(
                 f"\n\n######################\n##### Orbital {orbital} #####\n######################\n\n"
             )
