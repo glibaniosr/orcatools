@@ -1,4 +1,24 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Utility tools for ORCA calculations.
+
+Copyright (C) 2026 Gabriel Libânio Silva Rodrigues
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 import os, sys
 import subprocess as sub
 from contextlib import contextmanager
@@ -207,7 +227,9 @@ def get_input_blocks_from_file(orcainp_name, verbose=False):
     return osi_block, obl_block, xyzstr, charge, mult
 
 
-def plot_orbitals(gbw_file, orb, grid_dens=40, orca_plot_path=None, orca6=False, verbose=False):
+def plot_orbitals(
+    gbw_file, orb, grid_dens=40, orca_plot_path=None, orca6=True, verbose=False
+):
     """
     Plot the molecular orbitals from a .gbw file in the range of orbitals.
 
@@ -236,7 +258,7 @@ def plot_orbitals(gbw_file, orb, grid_dens=40, orca_plot_path=None, orca6=False,
         for orbital in orbital_range:
             if verbose:
                 print(f"Plotting Orbital = {orbital}, Grid-Density = {grid_dens} ...")
-            
+
             command = f"{orca_plot_path} {gbw_file} -i"
             if orca6:
                 input_data = f"2\n{orbital}\n4\n{grid_dens}\n5\n7\n11\n12\n"
@@ -258,33 +280,53 @@ def plot_orbitals(gbw_file, orb, grid_dens=40, orca_plot_path=None, orca6=False,
                 raise RuntimeError(
                     f"Command failed with return code {result.returncode}"
                 )
-                
+
+
 def orbital_viewer(cube, isovalue=0.03, resolution=1.00):
     """
     View the molecular orbitals from a specified .cube file.
-    
+
     :param cube:
         A string with the .cube file name.
     :param isovalue=0.03:
         A float with the isovalue to plot the orbitals.
-        
+
         Requires py3Dmol package.
     """
     try:
         import py3Dmol as p3d
-    except ImportError:"py3Dmol package is not installed. Please install it with 'pip install py3Dmol' or 'conda -c conda-forge install py3Dmol'."
-    
+    except ImportError:
+        "py3Dmol package is not installed. Please install it with 'pip install py3Dmol' or 'conda -c conda-forge install py3Dmol'."
+
     if not os.path.isfile(cube):
         raise BaseException("The .cube file does not exist!")
-    
+
     viewer = p3d.view()
     viewer.addModel(open(cube).read(), "cube")
-    viewer.setStyle({'stick': {}})
-    viewer.addVolumetricData(open(cube).read(), "cube", {'isoval': isovalue, 'color': 'blue', "opacity": 0.85, "resolution": resolution })
-    viewer.addVolumetricData(open(cube).read(), "cube", {'isoval': -isovalue, 'color': 'red', "opacity": 0.85, "resolution": resolution })
+    viewer.setStyle({"stick": {}})
+    viewer.addVolumetricData(
+        open(cube).read(),
+        "cube",
+        {
+            "isoval": isovalue,
+            "color": "blue",
+            "opacity": 0.85,
+            "resolution": resolution,
+        },
+    )
+    viewer.addVolumetricData(
+        open(cube).read(),
+        "cube",
+        {
+            "isoval": -isovalue,
+            "color": "red",
+            "opacity": 0.85,
+            "resolution": resolution,
+        },
+    )
     viewer.zoomTo()
-    # view.show()
-    
+    # viewer.show()
+
     return viewer
 
 
@@ -322,7 +364,7 @@ def orca_run(
         if orcarun:
             command = orcarun
         else:
-            command = f"{os.path.dirname(__file__)}/orca_run.sh"
+            command = f"orca_run.sh"
         command += f" -i {orcainp}"
         if nprocs:
             command += f" -p {nprocs}"

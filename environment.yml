@@ -1,0 +1,10 @@
+name: orcatools
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.7
+  - pip
+  - pip:
+      - py3Dmol # For molecular visualization
+    # - -e .  # Uncomment to install orcatools in editable mode

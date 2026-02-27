@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[project]
+name = "orcatools"
+version = "0.5.0"
+description = "A Python module to help users run electronic structure calculations with ORCA software"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "GPL-3.0-or-later"}
+authors = [
+    {name = "Gabriel Libânio Silva Rodrigues"},
+]
+keywords = ["chemistry", "computational-chemistry", "orca", "quantum-chemistry"]
+dependencies = [
+    "py3Dmol",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "black", "flake8"]
+
+[project.urls]
+Homepage = "https://github.com/glibaniosr/orcatools"
+Repository = "https://github.com/glibaniosr/orcatools"

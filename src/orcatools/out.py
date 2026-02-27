@@ -1,4 +1,24 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Output module for ORCA calculations.
+
+Copyright (C) 2026 Gabriel Libânio Silva Rodrigues
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 import os
 
 
@@ -265,7 +285,7 @@ class ORCAOUT:
                 "No absorption spectrum values found in the specified output file."
             )
         return energies, fosc
-    
+
     def get_active_space(self):
         """
         Function that returns the active space (initial and final orbital numbers) from the output file of a CASSCF calculation.
@@ -282,7 +302,10 @@ class ORCAOUT:
                 if "Determined orbital ranges" in line:
                     for line in out_file:
                         if "Active" in line:
-                            active_space = (int(line.strip().split()[1]), int(line.strip().split()[3]))
+                            active_space = (
+                                int(line.strip().split()[1]),
+                                int(line.strip().split()[3]),
+                            )
                             break
         if not active_space or not n or not m:
             raise BaseException(
@@ -290,7 +313,7 @@ class ORCAOUT:
             )
 
         return n, m, active_space
-    
+
     def get_occupation_numbers(self):
         """
         Function that returns the occupation numbers from the output file of a CASSCF calculation.
@@ -302,7 +325,10 @@ class ORCAOUT:
                     occ_numbers = []
                     read_active_MOs = False
                     for line in out_file:
-                        if read_active_MOs and int(line.strip().split()[0]) > active_MOs[1]:
+                        if (
+                            read_active_MOs
+                            and int(line.strip().split()[0]) > active_MOs[1]
+                        ):
                             break
                         if not line.strip():
                             continue

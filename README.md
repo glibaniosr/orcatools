@@ -12,6 +12,22 @@ The following text was taken from ORCA official website above.
 
 More help using ORCA can be found at ORCA Input Library: https://sites.google.com/site/orcainputlibrary/
 
+## Installation
+
+ORCA tools can be installed using the script install.sh, where you be asked to supply the conda environment where to install it:
+
+```shell
+./install.sh
+```
+
+You can also directly install it with pip:
+
+```shell
+pip install .
+```
+
+Use the flag -e at the end to make an editable installation. There the files are not copied to the environment site-packages folder but a reference file is created and the source files are used.
+
 ## inp
 The input submodule, which can create ORCA inputs and control their properties.
 

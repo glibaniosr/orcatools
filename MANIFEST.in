@@ -1,0 +1,8 @@
+include README.md
+include LICENSE
+include INSTALL.md
+include environment.yml
+recursive-include src/scripts *
+recursive-include examples *.py *.ipynb
+global-exclude __pycache__
+global-exclude *.py[co]
