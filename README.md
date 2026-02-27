@@ -14,7 +14,7 @@ More help using ORCA can be found at ORCA Input Library: https://sites.google.co
 
 ## Installation
 
-ORCA tools can be installed using the script install.sh, where you be asked to supply the conda environment where to install it:
+ORCA tools can be installed using the script install.sh, where you will be asked to supply the conda environment where to install it:
 
 ```shell
 ./install.sh
