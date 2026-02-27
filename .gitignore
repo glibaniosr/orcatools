@@ -5,3 +5,4 @@
 *.pyd
 *.log
 *.egg-info
+*.nodes

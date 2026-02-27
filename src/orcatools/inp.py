@@ -168,7 +168,7 @@ class ORCAINP:
                 if orcarun:
                     command = orcarun
                 else:
-                    command = f"{os.path.dirname(__file__)}/orca_run.sh"
+                    command = f"orca_run.sh"
                 command += f" -i {self.orcainp_name}"
                 if output:
                     command += f" -o {output}"

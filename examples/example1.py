@@ -1,4 +1,4 @@
-# Create, write an input file from string blocks, and run it.
+# Create, write an input file from string blocks
 from orcatools.inp import ORCAINP
 
 xyz = "B 0.0 0.0 0.8"
