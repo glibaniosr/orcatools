@@ -25,7 +25,7 @@ import os
 # ----- Define the OUTPUT class
 class ORCAOUT:
     """
-    Class which holds information for a ORCA input object.
+    Class which holds information for a ORCA output object.
 
     :param orcaout_name:
         A string with the name of the output file.
